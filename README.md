@@ -26,11 +26,11 @@ Building
 
 On Linux:
 
-**TODO**: deb and rpm packages
-
-  ./configure
-  make
-  sudo make install
+* Make sure cmake is installed.
+* `git submodule init && git submodule update` to pull submodules
+* `./build.sh`
+* `make` to build
+* Follow the readme at examples/ to run the test
 
 On Mac:
 
