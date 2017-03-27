@@ -32,6 +32,10 @@ void send_loop(std::shared_ptr<DataChannel> dc) {
   }
 }
 
+  void onDCMessage(std::string message)
+  {
+    std::cout << message << "\n";
+  };
 int main(void) {
 #ifndef SPDLOG_DISABLED
   auto console_sink = std::make_shared<spdlog::sinks::ansicolor_sink>(spdlog::sinks::stdout_sink_mt::instance());
@@ -72,6 +76,8 @@ int main(void) {
     Json::StreamWriterBuilder wBuilder;
     ws.Send(Json::writeString(wBuilder, jsonCandidate));
   };
+
+  
 
   std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [&dc](std::shared_ptr<DataChannel> channel) {
     std::cout << "Hey cool, got a data channel\n";
