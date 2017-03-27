@@ -18,4 +18,4 @@ Then, run
 
 	build/examples/websocket_client/testclient - its important that this be started after the web browser has connected to the test channel.
 
-You should then see a whole heap of ICE messages, followed by a "Hello from native code"
+You should then see a whole heap of ICE messages, followed by a "Hello from native code". As soon as data connection is established, client will spam server with strings at 1ms intervals. Check console of "testclient" to see the receiving message.
