@@ -117,6 +117,11 @@ ChunkQueue messages;
   }
 
 int main() {
+  void onDCMessage(std::string message)
+  {
+    std::cout << message << "\n";
+  };
+int main(void) {
 #ifndef SPDLOG_DISABLED
   auto console_sink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
   spdlog::create("rtcdcpp.PeerConnection", console_sink);
