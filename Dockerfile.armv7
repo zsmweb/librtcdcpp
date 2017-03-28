@@ -1,0 +1,30 @@
+FROM armv7/armhf-debian:latest
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get update
+RUN apt-get install -qy cmake
+RUN apt-get install -qy python
+RUN apt-get install -qy python-flask
+RUN apt-get install -qy python-pip
+RUN apt-get install -qy g++
+RUN apt-get install -qy libssl-dev
+RUN apt-get install -qy git
+RUN pip install setuptools
+RUN git clone https://github.com/GNOME/glib.git
+RUN apt-get install -qy gtk-doc-tools
+RUN apt-get install -qy libtool
+RUN apt-get install -qy autotools-dev
+RUN apt-get install -qy automake
+RUN apt-get install -qy python-dev
+RUN apt-get install -qy libffi-dev
+RUN apt-get install -qy libmount-dev
+RUN apt-get install -qy libpcre3-dev
+RUN cd glib && git checkout 36966334ead02df864776bf42bb81712254e3a20 && ./autogen.sh --prefix=/usr && make install
+ADD ./ /psl-librtcdcpp
+RUN cd /psl-librtcdcpp/usrsctp/ && sh bootstrap && ./configure && make
+RUN cp /psl-librtcdcpp/usrsctp/usrsctplib/.libs/libusrsctp.so.1.0.0 /psl-librtcdcpp/libusrsctp.so
+RUN cd /psl-librtcdcpp/libnice/ && ./autogen.sh && ./configure && make
+RUN cp /psl-librtcdcpp/libnice/agent/agent.h /psl-librtcdcpp/libnice/nice/
+WORKDIR /psl-librtcdcpp
+
+RUN cd /psl-librtcdcpp && build.sh
