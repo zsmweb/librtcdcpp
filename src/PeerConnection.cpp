@@ -335,4 +335,7 @@ void PeerConnection::CreateDataChannel(std::string label, std::string protocol) 
   logger->info("Spawning create_dc thread");
   create_dc.detach();
 }
+void PeerConnection::ResetSCTPStream(uint16_t stream_id) {
+  this->sctp->ResetSCTPStream(stream_id);
+}
 }

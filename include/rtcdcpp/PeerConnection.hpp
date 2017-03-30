@@ -166,6 +166,7 @@ class PeerConnection {
   void HandleBinaryMessage(ChunkPtr chunk, uint16_t sid);
 
   std::shared_ptr<Logger> logger = GetLogger("rtcdcpp.PeerConnection");
-
+public:
+  void ResetSCTPStream(uint16_t stream_id);
 };
 }

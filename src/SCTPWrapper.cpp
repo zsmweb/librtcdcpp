@@ -30,8 +30,11 @@
  */
 
 #include "rtcdcpp/SCTPWrapper.hpp"
-
 #include <iostream>
+#include <stdio.h>
+
+#include <errno.h>
+#include <string.h>
 
 namespace rtcdcpp {
 
@@ -97,6 +100,8 @@ void SCTPWrapper::OnNotification(union sctp_notification *notify, size_t len) {
       SPDLOG_TRACE(logger, "OnNotification(type=SCTP_NOTIFICATIONS_STOPPED_EVENT)");
       break;
     case SCTP_STREAM_RESET_EVENT:
+      // Close datachannel
+      
       SPDLOG_TRACE(logger, "OnNotification(type=SCTP_STREAM_RESET_EVENT)");
       break;
     case SCTP_ASSOC_RESET_EVENT:
@@ -290,6 +295,24 @@ void SCTPWrapper::Stop() {
     usrsctp_shutdown(sock, SHUT_RDWR);
     usrsctp_close(sock);
     sock = nullptr;
+  }
+  usrsctp_deregister_address(this);
+}
+
+void SCTPWrapper::ResetSCTPStream(uint16_t stream_id) {
+  struct sctp_reset_streams stream_close;
+  memset(&stream_close, 0, sizeof(stream_close));
+  stream_close.srs_assoc_id = SCTP_ALL_ASSOC; //
+  stream_close.srs_flags = SCTP_STREAM_RESET_OUTGOING;
+  stream_close.srs_number_streams = 1;
+  stream_close.srs_stream_list[0] = stream_id;
+  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RESET_STREAMS, &stream_close, sizeof(stream_close)) == -1) {
+    logger->error("Could not set socket options for SCTP_RESET_STREAMS. errno={}", errno); 
+    std::cout << "CLOSE/RESET ERR!\n";
+    perror(strerror(errno));
+  } else {
+    std::cout << "Close works\n";
+    //this->OnClosed(); // should we call this here or when actual close ACK event (SCTP_STREAM_RESET_EVENT) comes from receiving side?
   }
 }
 

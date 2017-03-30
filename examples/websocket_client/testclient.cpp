@@ -12,6 +12,7 @@
 #include <iostream>
 #include <fstream>
 
+bool running = true;
 using namespace rtcdcpp;
 
 void send_loop(std::shared_ptr<DataChannel> dc) {
@@ -36,6 +37,12 @@ void send_loop(std::shared_ptr<DataChannel> dc) {
   {
     std::cout << message << "\n";
   };
+
+  void onDCClose()
+    {
+     std::cout << "DC Close!" << "\n";
+     running = false;
+    };
 int main(void) {
 #ifndef SPDLOG_DISABLED
   auto console_sink = std::make_shared<spdlog::sinks::ansicolor_sink>(spdlog::sinks::stdout_sink_mt::instance());
@@ -49,7 +56,6 @@ int main(void) {
   WebSocketWrapper ws("ws://localhost:5000/channel/test");
   std::shared_ptr<PeerConnection> pc;
   std::shared_ptr<DataChannel> dc;
-
   if (!ws.Initialize()) {
     std::cout << "WebSocket connection failed\n";
     return 0;
@@ -58,8 +64,7 @@ int main(void) {
   RTCConfiguration config;
   config.ice_servers.emplace_back(RTCIceServer{"stun3.l.google.com", 19302});
 
-  bool running = true;
-
+// bool run
   ChunkQueue messages;
 
   std::function<void(std::string)> onMessage = [&messages](std::string msg) {
@@ -120,7 +125,7 @@ int main(void) {
                 << "\n";
     }
   }
-
+  pc.reset();
   ws.Close();
 
   return 0;

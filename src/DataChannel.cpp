@@ -30,7 +30,6 @@
  */
 
 #include <iostream>
-
 #include "rtcdcpp/DataChannel.hpp"
 #include "rtcdcpp/PeerConnection.hpp"
 
@@ -46,7 +45,9 @@ DataChannel::DataChannel(PeerConnection *pc, uint16_t stream_id, uint8_t chan_ty
   error_cb = [](std::string x) { ; };
 }
 
-DataChannel::~DataChannel() { ; }
+DataChannel::~DataChannel() { 
+// If datachannel is open, close it.
+}
 
 uint16_t DataChannel::GetStreamID() { return this->stream_id; }
 
@@ -57,9 +58,11 @@ std::string DataChannel::GetLabel() { return this->label; }
 std::string DataChannel::GetProtocol() { return this->protocol; }
 
 /**
- * TODO: Close the DataChannel.
+ * Close the DataChannel.
  */
-void Close() { ; }
+void DataChannel::Close() {
+  this->pc->ResetSCTPStream(GetStreamID());
+}
 
 bool DataChannel::SendString(std::string msg) {
   std::cerr << "DC: Sending string: " << msg << std::endl;
