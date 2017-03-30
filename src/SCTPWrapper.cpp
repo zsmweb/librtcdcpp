@@ -56,22 +56,11 @@ SCTPWrapper::~SCTPWrapper() {
   }
 }
 
-/*
 static uint16_t interested_events[] = {SCTP_ASSOC_CHANGE,         SCTP_PEER_ADDR_CHANGE,   SCTP_REMOTE_ERROR,          SCTP_SEND_FAILED,
                                        SCTP_SENDER_DRY_EVENT,     SCTP_SHUTDOWN_EVENT,     SCTP_ADAPTATION_INDICATION, SCTP_PARTIAL_DELIVERY_EVENT,
                                        SCTP_AUTHENTICATION_EVENT, SCTP_STREAM_RESET_EVENT, SCTP_ASSOC_RESET_EVENT,     SCTP_STREAM_CHANGE_EVENT,
                                        SCTP_SEND_FAILED_EVENT};
-*/
-static uint16_t interested_events[] = {
-                          SCTP_ASSOC_CHANGE,
-                          SCTP_PEER_ADDR_CHANGE,
-                          SCTP_REMOTE_ERROR,
-                          SCTP_SHUTDOWN_EVENT,
-                          SCTP_ADAPTATION_INDICATION,
-                          SCTP_SEND_FAILED_EVENT,
-                          SCTP_STREAM_RESET_EVENT,
-                          SCTP_STREAM_CHANGE_EVENT
-};
+
 // TODO: error callbacks
 void SCTPWrapper::OnNotification(union sctp_notification *notify, size_t len) {
   if (notify->sn_header.sn_length != (uint32_t)len) {
@@ -111,6 +100,8 @@ void SCTPWrapper::OnNotification(union sctp_notification *notify, size_t len) {
       SPDLOG_TRACE(logger, "OnNotification(type=SCTP_NOTIFICATIONS_STOPPED_EVENT)");
       break;
     case SCTP_STREAM_RESET_EVENT:
+      // Close datachannel
+      
       SPDLOG_TRACE(logger, "OnNotification(type=SCTP_STREAM_RESET_EVENT)");
 			struct sctp_stream_reset_event reset_event;
 			reset_event = notify->sn_strreset_event;
@@ -232,7 +223,7 @@ bool SCTPWrapper::Initialize() {
   usrsctp_sysctl_set_sctp_ecn_enable(0);
   usrsctp_register_address(this);
 
-  sock = usrsctp_socket(AF_CONN, SOCK_STREAM, IPPROTO_SCTP, &SCTPWrapper::_OnSCTPForGS, NULL,  usrsctp_sysctl_get_sctp_sendspace() / 2, this);
+  sock = usrsctp_socket(AF_CONN, SOCK_STREAM, IPPROTO_SCTP, &SCTPWrapper::_OnSCTPForGS, NULL, 0, this);
   if (!sock) {
     logger->error("Could not create usrsctp_socket. errno={}", errno);
     return false;
@@ -251,20 +242,14 @@ bool SCTPWrapper::Initialize() {
   memset(&peer_param, 0, sizeof(peer_param));
   peer_param.spp_flags = SPP_PMTUD_DISABLE;
   peer_param.spp_pathmtu = 1200;  // XXX: Does this need to match the actual MTU?
-  peer_param.spp_flags &= ~SPP_PMTUD_ENABLE;
-  peer_param.spp_flags |= SPP_PMTUD_DISABLE;
-  // II: Check2
-  //memset(&peer_param, 0, sizeof(struct sctp_paddrparams));
-  //memcpy(&peer_param.spp_address, &addr, sizeof(struct sockaddr_conn));
-
-  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_PEER_ADDR_PARAMS, &peer_param, (socklen_t)sizeof(peer_param)) == -1) {
+  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_PEER_ADDR_PARAMS, &peer_param, sizeof(peer_param)) == -1) {
     logger->error("Could not set socket options for SCTP_PEER_ADDR_PARAMS. errno={}", errno);
     return false;
   }
 
   struct sctp_assoc_value av;
   av.assoc_id = SCTP_ALL_ASSOC;
-  av.assoc_value = SCTP_ENABLE_RESET_STREAM_REQ | SCTP_ENABLE_CHANGE_ASSOC_REQ;
+  av.assoc_value = 1;
   if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_ENABLE_STREAM_RESET, &av, sizeof(av)) == -1) {
     logger->error("Could not set socket options for SCTP_ENABLE_STREAM_RESET. errno={}", errno);
     return false;
@@ -276,10 +261,6 @@ bool SCTPWrapper::Initialize() {
     return false;
   }
 
-  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_REUSE_PORT, &nodelay, sizeof(nodelay)) == -1) {
-    logger->error("Could not set socket options for SCTP_REUSE_PORT. errno={}", errno);
-    return false;
-  }
   /* Enable the events of interest */
   struct sctp_event event;
   memset(&event, 0, sizeof(event));
@@ -294,7 +275,6 @@ bool SCTPWrapper::Initialize() {
     }
   }
 
-  // II: CHECK
   struct sctp_initmsg init_msg;
   memset(&init_msg, 0, sizeof(init_msg));
   init_msg.sinit_num_ostreams = MAX_OUT_STREAM;
@@ -356,18 +336,20 @@ void SCTPWrapper::Stop() {
   usrsctp_deregister_address(this);
 }
 
-void SCTPWrapper::ResetSCTPStream(uint16_t stream_id, uint16_t srs_flags) {
+void SCTPWrapper::ResetSCTPStream(uint16_t stream_id) {
   struct sctp_reset_streams stream_close;
-  size_t no_of_streams = 1;
-  size_t len = sizeof(sctp_assoc_t) + (2 + no_of_streams) * sizeof(uint16_t);
-  memset(&stream_close, 0, len);
-  stream_close.srs_flags = srs_flags;
-  stream_close.srs_number_streams = no_of_streams;
+  memset(&stream_close, 0, sizeof(stream_close));
+  stream_close.srs_assoc_id = SCTP_ALL_ASSOC; //
+  stream_close.srs_flags = SCTP_STREAM_RESET_OUTGOING;
+  stream_close.srs_number_streams = 1;
   stream_close.srs_stream_list[0] = stream_id;
-  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RESET_STREAMS, &stream_close, (socklen_t)len) == -1) {
+  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RESET_STREAMS, &stream_close, sizeof(stream_close)) == -1) {
     logger->error("Could not set socket options for SCTP_RESET_STREAMS. errno={}", errno); 
+    std::cout << "CLOSE/RESET ERR!\n";
+    perror(strerror(errno));
   } else {
-    logger->info("SCTP_RESET_STREAMS socket option has been set successfully");
+    std::cout << "Close works\n";
+    //this->OnClosed(); // should we call this here or when actual close ACK event (SCTP_STREAM_RESET_EVENT) comes from receiving side?
   }
 }
 
@@ -447,27 +429,23 @@ void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
 
   spa.sendv_sndinfo.snd_sid = sid;
   // spa.sendv_sndinfo.snd_flags = SCTP_EOR | SCTP_UNORDERED;
-  spa.sendv_sndinfo.snd_flags = SCTP_UNORDERED;
-  spa.sendv_sndinfo.snd_context = 0;
-  spa.sendv_sndinfo.snd_assoc_id = 0;
-  //spa.sendv_sndinfo.snd_flags = SCTP_EOR;
+  spa.sendv_sndinfo.snd_flags = SCTP_EOR;
   spa.sendv_sndinfo.snd_ppid = htonl(ppid);
 
   // spa.sendv_prinfo.pr_policy = SCTP_PR_SCTP_RTX;
   // spa.sendv_prinfo.pr_value = 0;
 
-  int tries = 15;
-  while (tries < 3000000) {
+  int tries = 0;
+  while (tries < 5) {
     if (usrsctp_sendv(this->sock, chunk->Data(), chunk->Length(), NULL, 0, &spa, sizeof(spa), SCTP_SENDV_SPA, 0) < 0) {
-      //logger->error("FAILED to send, trying again in {} ms. Retry count: {}", tries, tries);
-      //perror("H: ");
-      std::this_thread::sleep_for(std::chrono::milliseconds(tries));
-      tries += 2;
+      logger->error("FAILED to send, try: {}", tries);
+      tries += 1;
+      std::this_thread::sleep_for(std::chrono::seconds(tries));
     } else {
       return;
     }
   }
-  //tried about 2 times and still no luck
+  //tried about 5 times and still no luck
   throw std::runtime_error("Send failed");
 }
 
@@ -492,7 +470,7 @@ void SCTPWrapper::RecvLoop() {
     if (!chunk) {
       return;
     }
-    //SPDLOG_DEBUG(logger, "RunRecv() Handling packet of len - {}", chunk->Length());
+    SPDLOG_DEBUG(logger, "RunRecv() Handling packet of len - {}", chunk->Length());
     usrsctp_conninput(this, chunk->Data(), chunk->Length(), 0);
   }
 }

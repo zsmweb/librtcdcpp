@@ -26,7 +26,6 @@ extern "C" {
 }
 bool running = true;
 using namespace rtcdcpp;
-#include<usrsctp.h>
 
 void send_loop(std::shared_ptr<DataChannel> dc) {
   std::ifstream bunnyFile;
@@ -134,7 +133,6 @@ int main(void) {
   WebSocketWrapper ws("ws://localhost:5000/channel/test");
   std::shared_ptr<PeerConnection> pc;
   std::shared_ptr<DataChannel> dc;
-
   if (!ws.Initialize()) {
     std::cout << "WebSocket connection failed\n";
     return 0;
@@ -143,6 +141,8 @@ int main(void) {
   RTCConfiguration config;
   config.ice_servers.emplace_back(RTCIceServer{"stun3.l.google.com", 19302});
 
+// bool run
+  ChunkQueue messages;
 
   std::function<void(std::string)> onMessage = [](std::string msg) {
     messages.push(std::shared_ptr<Chunk>(new Chunk((const void *)msg.c_str(), msg.length())));
@@ -159,23 +159,6 @@ int main(void) {
     ws.Send(Json::writeString(wBuilder, jsonCandidate));
   };
 
-  std::thread stress_thread;
-  std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [&dc](std::shared_ptr<DataChannel> channel) {
-    std::cout << "Hey cool, got a data channel\n";
-    dc = channel;
-    std::thread send_thread = std::thread(send_loop, channel);
-    send_thread.detach();
-  };
-
-  ws.SetOnMessage(onMessage);
-  ws.Start();
-  ws.Send("{\"type\": \"client_connected\", \"msg\": {}}");
-
-  Json::Reader reader;
-  Json::StreamWriterBuilder msgBuilder;
-
-  while (running) {
-    ChunkPtr cur_msg = messages.wait_and_pop();
     if (!running) {
       std::cout << "Breaking\n";
       break;
