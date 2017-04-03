@@ -2,7 +2,6 @@
 /BUILD/
 /examples/.env/
 *.so
-spdlog/
 CMakeCache.txt
 CMakeFiles/
 Makefile
