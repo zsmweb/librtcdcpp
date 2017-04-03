@@ -11,6 +11,7 @@
 #include <ios>
 #include <iostream>
 #include <fstream>
+#include <unistd.h>
 
 bool running = true;
 using namespace rtcdcpp;

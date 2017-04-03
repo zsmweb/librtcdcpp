@@ -32,6 +32,7 @@
 #include <iostream>
 #include "rtcdcpp/DataChannel.hpp"
 #include "rtcdcpp/PeerConnection.hpp"
+#include <usrsctp.h>
 
 namespace rtcdcpp {
 
@@ -61,7 +62,7 @@ std::string DataChannel::GetProtocol() { return this->protocol; }
  * Close the DataChannel.
  */
 void DataChannel::Close() {
-  this->pc->ResetSCTPStream(GetStreamID());
+  this->pc->ResetSCTPStream(GetStreamID(), SCTP_STREAM_RESET_OUTGOING);
 }
 
 bool DataChannel::SendString(std::string msg) {

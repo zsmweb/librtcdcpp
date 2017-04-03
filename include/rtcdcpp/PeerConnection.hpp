@@ -167,6 +167,6 @@ class PeerConnection {
 
   std::shared_ptr<Logger> logger = GetLogger("rtcdcpp.PeerConnection");
 public:
-  void ResetSCTPStream(uint16_t stream_id);
+  void ResetSCTPStream(uint16_t stream_id, uint16_t srs_flags);
 };
 }

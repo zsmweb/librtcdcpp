@@ -39,7 +39,6 @@
 namespace rtcdcpp {
 
 using namespace std;
-
 SCTPWrapper::SCTPWrapper(DTLSEncryptCallbackPtr dtlsEncryptCB, MsgReceivedCallbackPtr msgReceivedCB)
     : local_port(5000),  // XXX: Hard-coded for now
       remote_port(5000),
@@ -107,9 +106,12 @@ void SCTPWrapper::OnNotification(union sctp_notification *notify, size_t len) {
 			reset_event = notify->sn_strreset_event;
 			for (int i = 1; i < 2; i++) {
 				uint16_t streamid = reset_event.strreset_stream_list[i];
+        uint16_t set_flags;
 				if (reset_event.strreset_flags != 0) {
 					if ((reset_event.strreset_flags ^ SCTP_STREAM_RESET_INCOMING_SSN) == 0) {
 						std::cout << "INCOMING SSN\n";
+            set_flags = SCTP_STREAM_RESET_INCOMING;
+            //call the onClose of datachannel here.
 					}
 					if ((reset_event.strreset_flags ^ SCTP_STREAM_RESET_OUTGOING_SSN) == 0) {
 						std::cout << "OUTGOING SSN\n";
@@ -121,11 +123,12 @@ void SCTPWrapper::OnNotification(union sctp_notification *notify, size_t len) {
 						std::cout << "RESET FAILED\n";
 					}
 				std::cout << "For stream/SSN id#" << streamid << ", reset received\n";
-				//std::cout << "ASSOC ID: " << reset_event.strreset_assoc_id << "\n"; // positive 32bit integer. SCTP_ALL_ASSOC = 2. This is 3? y
 				} else {
 					continue;
 				}
-				//ResetSCTPStream(streamid); // WIP
+        if (set_flags == SCTP_STREAM_RESET_INCOMING) {
+				  ResetSCTPStream(streamid, set_flags);
+        }
 			}
       break;
     case SCTP_ASSOC_RESET_EVENT:
@@ -323,19 +326,20 @@ void SCTPWrapper::Stop() {
   usrsctp_deregister_address(this);
 }
 
-void SCTPWrapper::ResetSCTPStream(uint16_t stream_id) {
-  struct sctp_reset_streams *stream_close;
-
-  size_t len = sizeof(sctp_assoc_t) + (2 + 1) * sizeof(uint16_t);
-  memset(stream_close, 0, len);
-  stream_close->srs_flags = SCTP_STREAM_RESET_OUTGOING;
-  stream_close->srs_number_streams = 1;
-  stream_close->srs_stream_list[0] = stream_id;
-  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RESET_STREAMS, stream_close, (socklen_t)len) == -1) {
+void SCTPWrapper::ResetSCTPStream(uint16_t stream_id, uint16_t srs_flags) {
+  struct sctp_reset_streams stream_close;
+  size_t no_of_streams = 1;
+  std::cout << "srs_flag: " << srs_flags << "\n";
+  size_t len = sizeof(sctp_assoc_t) + (2 + no_of_streams) * sizeof(uint16_t);
+  memset(&stream_close, 0, len);
+  stream_close.srs_flags = srs_flags;
+  stream_close.srs_number_streams = no_of_streams;
+  stream_close.srs_stream_list[0] = stream_id;
+  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RESET_STREAMS, &stream_close, (socklen_t)len) == -1) {
     logger->error("Could not set socket options for SCTP_RESET_STREAMS. errno={}", errno); 
   } else {
-    //this->OnClosed();
   }
+  //free(stream_close);
 }
 
 void SCTPWrapper::DTLSForSCTP(ChunkPtr chunk) { this->recv_queue.push(chunk); }
