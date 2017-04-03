@@ -101,8 +101,32 @@ void SCTPWrapper::OnNotification(union sctp_notification *notify, size_t len) {
       break;
     case SCTP_STREAM_RESET_EVENT:
       // Close datachannel
-      
+      std::cout << "STREAM RESET RECEIVED\n"; //now reset stream.
       SPDLOG_TRACE(logger, "OnNotification(type=SCTP_STREAM_RESET_EVENT)");
+			struct sctp_stream_reset_event reset_event;
+			reset_event = notify->sn_strreset_event;
+			for (int i = 1; i < 2; i++) {
+				uint16_t streamid = reset_event.strreset_stream_list[i];
+				if (reset_event.strreset_flags != 0) {
+					if ((reset_event.strreset_flags ^ SCTP_STREAM_RESET_INCOMING_SSN) == 0) {
+						std::cout << "INCOMING SSN\n";
+					}
+					if ((reset_event.strreset_flags ^ SCTP_STREAM_RESET_OUTGOING_SSN) == 0) {
+						std::cout << "OUTGOING SSN\n";
+				  }
+					if ((reset_event.strreset_flags ^ SCTP_STREAM_RESET_DENIED) == 0) {
+						std::cout << "RESET DENIED BY PEER\n";
+					}
+					if ((reset_event.strreset_flags ^ SCTP_STREAM_RESET_FAILED) == 0) {
+						std::cout << "RESET FAILED\n";
+					}
+				std::cout << "For stream/SSN id#" << streamid << ", reset received\n";
+				//std::cout << "ASSOC ID: " << reset_event.strreset_assoc_id << "\n"; // positive 32bit integer. SCTP_ALL_ASSOC = 2. This is 3? y
+				} else {
+					continue;
+				}
+				//ResetSCTPStream(streamid); // WIP
+			}
       break;
     case SCTP_ASSOC_RESET_EVENT:
       SPDLOG_TRACE(logger, "OnNotification(type=SCTP_ASSOC_RESET_EVENT)");
@@ -300,19 +324,17 @@ void SCTPWrapper::Stop() {
 }
 
 void SCTPWrapper::ResetSCTPStream(uint16_t stream_id) {
-  struct sctp_reset_streams stream_close;
-  memset(&stream_close, 0, sizeof(stream_close));
-  stream_close.srs_assoc_id = SCTP_ALL_ASSOC; //
-  stream_close.srs_flags = SCTP_STREAM_RESET_OUTGOING;
-  stream_close.srs_number_streams = 1;
-  stream_close.srs_stream_list[0] = stream_id;
-  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RESET_STREAMS, &stream_close, sizeof(stream_close)) == -1) {
+  struct sctp_reset_streams *stream_close;
+
+  size_t len = sizeof(sctp_assoc_t) + (2 + 1) * sizeof(uint16_t);
+  memset(stream_close, 0, len);
+  stream_close->srs_flags = SCTP_STREAM_RESET_OUTGOING;
+  stream_close->srs_number_streams = 1;
+  stream_close->srs_stream_list[0] = stream_id;
+  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RESET_STREAMS, stream_close, (socklen_t)len) == -1) {
     logger->error("Could not set socket options for SCTP_RESET_STREAMS. errno={}", errno); 
-    std::cout << "CLOSE/RESET ERR!\n";
-    perror(strerror(errno));
   } else {
-    std::cout << "Close works\n";
-    //this->OnClosed(); // should we call this here or when actual close ACK event (SCTP_STREAM_RESET_EVENT) comes from receiving side?
+    //this->OnClosed();
   }
 }
 
