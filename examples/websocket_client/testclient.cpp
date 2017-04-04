@@ -85,7 +85,7 @@ int main(void) {
 
   
 
-  std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [&dc](std::shared_ptr<DataChannel> channel) {
+  std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [&dc, &messages](std::shared_ptr<DataChannel> channel) {
     std::cout << "Hey cool, got a data channel\n";
     dc = channel;
     std::thread send_thread = std::thread(send_loop, channel);
@@ -101,6 +101,10 @@ int main(void) {
 
   while (running) {
     ChunkPtr cur_msg = messages.wait_and_pop();
+    if (!running) {
+      std::cout << "Breaking\n";
+      break;
+    }
     std::string msg((const char *)cur_msg->Data(), cur_msg->Length());
     std::cout << msg << "\n";
     Json::Value root;
