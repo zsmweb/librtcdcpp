@@ -33,6 +33,7 @@ void send_loop(std::shared_ptr<DataChannel> dc) {
     std::cout << "Sent message of size " << std::to_string(nRead) << std::endl;
   }
 }
+ChunkQueue messages;
 
   void onDCMessage(std::string message)
   {
@@ -43,6 +44,7 @@ void send_loop(std::shared_ptr<DataChannel> dc) {
     {
      std::cout << "DC Close!" << "\n";
      running = false;
+     messages.Stop();
     };
 int main(void) {
 #ifndef SPDLOG_DISABLED
@@ -66,7 +68,6 @@ int main(void) {
   config.ice_servers.emplace_back(RTCIceServer{"stun3.l.google.com", 19302});
 
 // bool run
-  ChunkQueue messages;
 
   std::function<void(std::string)> onMessage = [&messages](std::string msg) {
     messages.push(std::shared_ptr<Chunk>(new Chunk((const void *)msg.c_str(), msg.length())));
