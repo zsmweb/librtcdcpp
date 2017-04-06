@@ -46,9 +46,7 @@ DataChannel::DataChannel(PeerConnection *pc, uint16_t stream_id, uint8_t chan_ty
   error_cb = [](std::string x) { ; };
 }
 
-DataChannel::~DataChannel() { 
-// If datachannel is open, close it.
-}
+DataChannel::~DataChannel() { DataChannel::Close(); }
 
 uint16_t DataChannel::GetStreamID() { return this->stream_id; }
 
@@ -61,9 +59,14 @@ std::string DataChannel::GetProtocol() { return this->protocol; }
 /**
  * Close the DataChannel.
  */
-void DataChannel::Close() {
+void Close() { 
   this->pc->ResetSCTPStream(GetStreamID());
 }
+
+bool DataChannel::SendString(std::string msg) {
+  std::cerr << "DC: Sending string: " << msg << std::endl;
+  this->pc->SendStrMsg(msg, this->stream_id);
+  return true;
 
 bool DataChannel::SendString(std::string msg) {
   //std::cerr << "DC: Sending string: " << msg << std::endl;
