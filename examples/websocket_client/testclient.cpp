@@ -142,7 +142,6 @@ int main(void) {
   config.ice_servers.emplace_back(RTCIceServer{"stun3.l.google.com", 19302});
 
 // bool run
-  ChunkQueue messages;
 
   std::function<void(std::string)> onMessage = [](std::string msg) {
     messages.push(std::shared_ptr<Chunk>(new Chunk((const void *)msg.c_str(), msg.length())));
