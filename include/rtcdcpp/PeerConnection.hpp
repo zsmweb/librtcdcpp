@@ -57,6 +57,7 @@ struct RTCConfiguration {
 
 class PeerConnection {
   friend class DTLSWrapper;
+  friend class DataChannel;
  public:
   struct IceCandidate {
     IceCandidate(const std::string &candidate, const std::string &sdpMid, int sdpMLineIndex)
@@ -167,7 +168,6 @@ class PeerConnection {
   void HandleBinaryMessage(ChunkPtr chunk, uint16_t sid);
 
   std::shared_ptr<Logger> logger = GetLogger("rtcdcpp.PeerConnection");
-public:
   void ResetSCTPStream(uint16_t stream_id, uint16_t srs_flags);
 };
 }
