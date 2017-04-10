@@ -19,6 +19,7 @@ RUN apt-get install -qy python-dev
 RUN apt-get install -qy libffi-dev
 RUN apt-get install -qy libmount-dev
 RUN apt-get install -qy libpcre3-dev
+RUN apt-get install -qy python-flask-sockets
 RUN cd glib && git checkout 36966334ead02df864776bf42bb81712254e3a20 && ./autogen.sh --prefix=/usr && make install
 ADD ./ /psl-librtcdcpp
 RUN cd /psl-librtcdcpp/usrsctp/ && sh bootstrap && ./configure && make
