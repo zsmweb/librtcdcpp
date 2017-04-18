@@ -13,6 +13,8 @@
 #include <fstream>
 #include <unistd.h>
 
+#include<thread>
+
 bool running = true;
 using namespace rtcdcpp;
 
@@ -46,6 +48,68 @@ ChunkQueue messages;
      running = false;
      messages.Stop();
     };
+  int gdbbreak = 0;
+  void stress1(std::shared_ptr<DataChannel> dc) {
+    int i = 1;
+    int count = 0;
+    int bytecount1 = 0, bytecount2 = 0;
+    //std::string s(262145, 'a');
+    //dc->SendString(s);
+    
+    std::cout << "===Testing throughput using incremented strings===\n";
+    while (running && count < 723) {
+      count += 1;
+      //std::cout << "Sending " << (size_t) i << " bytes...\n";
+      std::string test_str((size_t) i, 'A');
+      try {
+        //usleep(30000);
+        
+        dc->SendString(test_str);
+      } catch(std::runtime_error& e) {
+        std::cout << "BROKE at count: " << count << "\n";
+        count--;
+        break;
+      }
+      i++;
+      bytecount1 += i;
+    }
+    std::cout << bytecount1 << " bytes sent.\n";
+    int inc_stop;
+    inc_stop = count;
+    i = 1; count = 0;
+    // sleep here?
+    int wait_1, close_wait;
+    wait_1 = 4;
+    
+    std::cout << "\nWaiting " << wait_1 << " seconds.\n";
+    usleep(wait_1 * 1000000);
+    
+    std::cout << "===Testing throughput using single char spam===\n";
+    while (running && count < 419) {
+      count += 1;
+      std::string test_str((size_t) i, 'A');
+      try {
+        //usleep(30000);
+        if (count == 419) { gdbbreak = 1; }
+        dc->SendString(test_str);
+      } catch(std::runtime_error& e) {
+        std::cout << "BROKE at count: " << count << "\n";
+        count--;
+        break;
+      }
+    }
+    std::cout << count << " bytes sent.\n\n";
+    std::cout << "Incremental throughput stops at: " << inc_stop << "\n";
+    std::cout << "Single char spam stops at count: " << count << "\n";
+    std::cout << "TOTAL successful send_string calls: " << inc_stop + count << "\n";
+    std::cout << "TOTAL bytes sent: " << bytecount1 + count << "\n";
+    
+    close_wait = 3;
+    std::cout << "\nWaiting " << close_wait << " seconds before closing DC.\n";
+    usleep(close_wait * 1000000); //5s
+    dc->Close();
+    
+  }
 int main(void) {
 #ifndef SPDLOG_DISABLED
   auto console_sink = std::make_shared<spdlog::sinks::ansicolor_sink>(spdlog::sinks::stdout_sink_mt::instance());
@@ -84,9 +148,8 @@ int main(void) {
     ws.Send(Json::writeString(wBuilder, jsonCandidate));
   };
 
-  
-
-  std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [&dc, &messages](std::shared_ptr<DataChannel> channel) {
+  std::thread stress_thread;
+  std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [&dc, &messages, &stress_thread, &start_stress](std::shared_ptr<DataChannel> channel) {
     std::cout << "Hey cool, got a data channel\n";
     dc = channel;
     std::thread send_thread = std::thread(send_loop, channel);
@@ -110,9 +173,9 @@ int main(void) {
     std::cout << msg << "\n";
     Json::Value root;
     if (reader.parse(msg, root)) {
-      std::cout << "Got msg of type: " << root["type"] << "\n";
+      //std::cout << "Got msg of type: " << root["type"] << "\n";
       if (root["type"] == "offer") {
-        std::cout << "Time to get the rtc party started\n";
+        //std::cout << "Time to get the rtc party started\n";
         pc = std::make_shared<PeerConnection>(config, onLocalIceCandidate, onDataChannel);
 
         pc->ParseOffer(root["msg"]["sdp"].asString());
@@ -121,7 +184,7 @@ int main(void) {
         answer["msg"]["sdp"] = pc->GenerateAnswer();
         answer["msg"]["type"] = "answer";
 
-        std::cout << "Sending Answer: " << answer << "\n";
+        //std::cout << "Sending Answer: " << answer << "\n";
         ws.Send(Json::writeString(msgBuilder, answer));
       } else if (root["type"] == "candidate") {
         pc->SetRemoteIceCandidate("a=" + root["msg"]["candidate"].asString());
@@ -131,8 +194,9 @@ int main(void) {
                 << "\n";
     }
   }
-  pc.reset();
+  
+  pc.reset(); //lose pc.
   ws.Close();
-
+  
   return 0;
 }

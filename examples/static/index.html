@@ -14,6 +14,7 @@
   var dataChannel = null;
   var remoteCandidates = [];
   var have_answer = false;
+  window.totalmsg = 0;
 
   function reliable_log_msg(msg) {
     console.log(msg);
@@ -86,7 +87,7 @@
         dataChannel.onopen = function (e) {
           datachannel_log_msg("DataChannel open and ready to be used");
           //setInterval(function() { 
-              dataChannel.send("testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest");
+              //dataChannel.send("testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest");
           //}, 1); //1ms
           
               //setTimeout(function() { dataChannel.close(); }, 3000);
@@ -99,6 +100,9 @@
 
         dataChannel.onclose = function () {
           datachannel_log_msg("DataChannel closed");
+          console.clear();
+          console.log("TOTAL MSG: " + window.totalmsg);
+          window.totalmsg = 0;
           peerConnection.close();
         };
 
@@ -106,14 +110,17 @@
           datachannel_log_msg("DataChannel error: " + e.message);
           console.log(e);
         };
-
+        window.sizeofpackets = 0;
         dataChannel.onmessage = function (e) {
-          datachannel_log_msg("Received message: " + e.data);
+        datachannel_log_msg("Received message: " + e.data);
           if (sourceBuffer != null) {
             sourceBuffer.appendBuffer(e.data);
           } else {
             console.log("Got data but sourceBuffer is null");
           }
+          //datachannel_log_msg("Received message: " + e.data);
+          window.sizeofpackets += e.data.length;
+          console.log("got DC msg");
         };
       };
 
@@ -195,7 +202,7 @@
           var msg = JSON.parse(event.data);
 
           reliable_log_msg("Received msg of type: " + msg.type);
-          console.log(msg);
+          //console.log(msg);
 
           switch (msg.type) {
             case "client_connected":

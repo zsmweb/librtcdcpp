@@ -66,7 +66,7 @@ void DataChannel::Close() {
 }
 
 bool DataChannel::SendString(std::string msg) {
-  std::cerr << "DC: Sending string: " << msg << std::endl;
+  //std::cerr << "DC: Sending string: " << msg << std::endl;
   this->pc->SendStrMsg(msg, this->stream_id);
   return true;
 }

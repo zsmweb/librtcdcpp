@@ -35,6 +35,7 @@
 
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 
 namespace rtcdcpp {
 
@@ -431,16 +432,18 @@ void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
   // spa.sendv_prinfo.pr_value = 0;
 
   int tries = 0;
-  while (tries < 5) {
+  while (1) {
     if (usrsctp_sendv(this->sock, chunk->Data(), chunk->Length(), NULL, 0, &spa, sizeof(spa), SCTP_SENDV_SPA, 0) < 0) {
       logger->error("FAILED to send, try: {}", tries);
+      perror("Here");
       tries += 1;
       std::this_thread::sleep_for(std::chrono::seconds(tries));
+      //fsync(this->sock);
     } else {
       return;
     }
   }
-  //tried about 5 times and still no luck
+  //tried about 2 times and still no luck
   throw std::runtime_error("Send failed");
 }
 
@@ -465,7 +468,7 @@ void SCTPWrapper::RecvLoop() {
     if (!chunk) {
       return;
     }
-    SPDLOG_DEBUG(logger, "RunRecv() Handling packet of len - {}", chunk->Length());
+    //SPDLOG_DEBUG(logger, "RunRecv() Handling packet of len - {}", chunk->Length());
     usrsctp_conninput(this, chunk->Data(), chunk->Length(), 0);
   }
 }
