@@ -158,6 +158,23 @@ int main(void) {
     ws.Send(Json::writeString(wBuilder, jsonCandidate));
   };
 
+  std::thread stress_thread;
+  std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [&dc, &messages, &stress_thread, &start_stress](std::shared_ptr<DataChannel> channel) {
+    std::cout << "Hey cool, got a data channel\n";
+    dc = channel;
+    std::thread send_thread = std::thread(send_loop, channel);
+    send_thread.detach();
+  };
+
+  ws.SetOnMessage(onMessage);
+  ws.Start();
+  ws.Send("{\"type\": \"client_connected\", \"msg\": {}}");
+
+  Json::Reader reader;
+  Json::StreamWriterBuilder msgBuilder;
+
+  while (running) {
+    ChunkPtr cur_msg = messages.wait_and_pop();
     if (!running) {
       std::cout << "Breaking\n";
       break;
@@ -166,9 +183,9 @@ int main(void) {
     std::cout << msg << "\n";
     Json::Value root;
     if (reader.parse(msg, root)) {
-      std::cout << "Got msg of type: " << root["type"] << "\n";
+      //std::cout << "Got msg of type: " << root["type"] << "\n";
       if (root["type"] == "offer") {
-        std::cout << "Time to get the rtc party started\n";
+        //std::cout << "Time to get the rtc party started\n";
         pc = std::make_shared<PeerConnection>(config, onLocalIceCandidate, onDataChannel);
 
         pc->ParseOffer(root["msg"]["sdp"].asString());
@@ -177,7 +194,7 @@ int main(void) {
         answer["msg"]["sdp"] = pc->GenerateAnswer();
         answer["msg"]["type"] = "answer";
 
-        std::cout << "Sending Answer: " << answer << "\n";
+        //std::cout << "Sending Answer: " << answer << "\n";
         ws.Send(Json::writeString(msgBuilder, answer));
       } else if (root["type"] == "candidate") {
         pc->SetRemoteIceCandidate("a=" + root["msg"]["candidate"].asString());

@@ -115,6 +115,12 @@
             console.log("Got data but sourceBuffer is null");
           }
           //datachannel_log_msg("Received message: " + e.data);
+          if (sourceBuffer != null) {
+            sourceBuffer.appendBuffer(e.data);
+          } else {
+            console.log("Got data but sourceBuffer is null");
+          }
+          //datachannel_log_msg("Received message: " + e.data);
           window.totalmsg += 1;
           window.sizeofpackets += e.data.length;
           console.log("got DC msg");
