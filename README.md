@@ -1,3 +1,9 @@
+* Run ./build.sh to run cmake to generate Makefiles initially.
+* You can just do "make" to rebuild whenever code is changed.
+* Run site-api.py (prerequisites: flask etc or just use docker file here).
+* Visit localhost:5000 and type "test" as the channel name and hit connect.
+* Run testclient in examples/websocket-client folder.
+
 librtcdcpp - A Simple WebRTC DataChannels Library
 =================================================
 
