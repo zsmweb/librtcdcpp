@@ -439,6 +439,7 @@ void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
       tries += 1;
       std::this_thread::sleep_for(std::chrono::seconds(tries));
       //fsync(this->sock);
+      break;
     } else {
       return;
     }

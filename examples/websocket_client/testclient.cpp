@@ -62,7 +62,7 @@ ChunkQueue messages;
       //std::cout << "Sending " << (size_t) i << " bytes...\n";
       std::string test_str((size_t) i, 'A');
       try {
-        //usleep(30000);
+       //usleep(300000 * i);
         
         dc->SendString(test_str);
       } catch(std::runtime_error& e) {
@@ -81,15 +81,15 @@ ChunkQueue messages;
     int wait_1, close_wait;
     wait_1 = 4;
     
-    std::cout << "\nWaiting " << wait_1 << " seconds.\n";
-    usleep(wait_1 * 1000000);
+    //std::cout << "\nWaiting " << wait_1 << " seconds.\n";
+   // usleep(wait_1 * 1000000);
     
     std::cout << "===Testing throughput using single char spam===\n";
     while (running && count < 419) {
       count += 1;
       std::string test_str((size_t) i, 'A');
       try {
-        //usleep(30000);
+        //usleep(300000);
         if (count == 419) { gdbbreak = 1; }
         dc->SendString(test_str);
       } catch(std::runtime_error& e) {
