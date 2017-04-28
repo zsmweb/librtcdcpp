@@ -223,7 +223,7 @@ bool SCTPWrapper::Initialize() {
   usrsctp_sysctl_set_sctp_ecn_enable(0);
   usrsctp_register_address(this);
 
-  sock = usrsctp_socket(AF_CONN, SOCK_STREAM, IPPROTO_SCTP, &SCTPWrapper::_OnSCTPForGS, NULL, 0, this);
+  sock = usrsctp_socket(AF_CONN, SOCK_STREAM, IPPROTO_SCTP, &SCTPWrapper::_OnSCTPForGS, NULL,  usrsctp_sysctl_get_sctp_sendspace() / 2, this);
   if (!sock) {
     logger->error("Could not create usrsctp_socket. errno={}", errno);
     return false;
@@ -348,8 +348,7 @@ void SCTPWrapper::ResetSCTPStream(uint16_t stream_id) {
     std::cout << "CLOSE/RESET ERR!\n";
     perror(strerror(errno));
   } else {
-    std::cout << "Close works\n";
-    //this->OnClosed(); // should we call this here or when actual close ACK event (SCTP_STREAM_RESET_EVENT) comes from receiving side?
+    logger->info("SCTP_RESET_STREAMS socket option has been set successfully");
   }
 }
 
@@ -429,7 +428,10 @@ void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
 
   spa.sendv_sndinfo.snd_sid = sid;
   // spa.sendv_sndinfo.snd_flags = SCTP_EOR | SCTP_UNORDERED;
-  spa.sendv_sndinfo.snd_flags = SCTP_EOR;
+  spa.sendv_sndinfo.snd_flags = SCTP_UNORDERED;
+  spa.sendv_sndinfo.snd_context = 0;
+  spa.sendv_sndinfo.snd_assoc_id = 0;
+  //spa.sendv_sndinfo.snd_flags = SCTP_EOR;
   spa.sendv_sndinfo.snd_ppid = htonl(ppid);
 
   // spa.sendv_prinfo.pr_policy = SCTP_PR_SCTP_RTX;

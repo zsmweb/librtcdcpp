@@ -26,6 +26,7 @@ extern "C" {
 }
 bool running = true;
 using namespace rtcdcpp;
+#include<usrsctp.h>
 
 void send_loop(std::shared_ptr<DataChannel> dc) {
   std::ifstream bunnyFile;
@@ -102,7 +103,27 @@ ChunkQueue messages;
     count = 0;
     int wait_1, close_wait;
     wait_1 = 4;
-
+    
+    //std::cout << "\nWaiting " << wait_1 << " seconds.\n";
+   // usleep(wait_1 * 1000000);
+    
+    std::cout << "===Testing throughput using single char spam===\n";
+    while (running && count < 419) {
+      count += 1;
+      std::string test_str((size_t) i, 'A');
+      try {
+        //usleep(300000);
+        if (count == 419) { gdbbreak = 1; }
+        dc->SendString(test_str);
+      } catch(std::runtime_error& e) {
+        std::cout << "BROKE at count: " << count << "\n";
+        count--;
+        break;
+      }
+    }
+    std::cout << count << " bytes sent.\n\n";
+    std::cout << "Incremental throughput stops at: " << inc_stop << "\n";
+    std::cout << "Single char spam stops at count: " << count << "\n";
     std::cout << "TOTAL successful send_string calls: " << inc_stop + count << "\n";
     std::cout << "TOTAL data sent: " << bytecount1 / (1024 * 1024) << " MB\n";
     std::cout << "TOTAL time taken: " << elapsed_seconds.count() << " seconds\n";
