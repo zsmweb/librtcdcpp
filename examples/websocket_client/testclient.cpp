@@ -12,11 +12,14 @@
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
+#define SCTP_DEBUG
+#define SCTP_MBUF_LOGGING
 
 #include<thread>
 
 bool running = true;
 using namespace rtcdcpp;
+#include<usrsctp.h>
 
 void send_loop(std::shared_ptr<DataChannel> dc) {
   std::ifstream bunnyFile;
@@ -89,7 +92,6 @@ ChunkQueue messages;
       count += 1;
       std::string test_str((size_t) i, 'A');
       try {
-        //usleep(300000);
         if (count == 419) { gdbbreak = 1; }
         dc->SendString(test_str);
       } catch(std::runtime_error& e) {
@@ -111,6 +113,11 @@ ChunkQueue messages;
     
   }
 int main(void) {
+  usrsctp_sysctl_set_sctp_debug_on(1);
+  usrsctp_sysctl_set_sctp_blackhole(2);
+  usrsctp_sysctl_set_sctp_ecn_enable(0);
+  usrsctp_sysctl_set_sctp_logging_level(1);
+  usrsctp_sysctl_set_sctp_buffer_splitting(1);
 #ifndef SPDLOG_DISABLED
   auto console_sink = std::make_shared<spdlog::sinks::ansicolor_sink>(spdlog::sinks::stdout_sink_mt::instance());
   spdlog::create("rtcdcpp.PeerConnection", console_sink);

@@ -56,11 +56,22 @@ SCTPWrapper::~SCTPWrapper() {
   }
 }
 
+/*
 static uint16_t interested_events[] = {SCTP_ASSOC_CHANGE,         SCTP_PEER_ADDR_CHANGE,   SCTP_REMOTE_ERROR,          SCTP_SEND_FAILED,
                                        SCTP_SENDER_DRY_EVENT,     SCTP_SHUTDOWN_EVENT,     SCTP_ADAPTATION_INDICATION, SCTP_PARTIAL_DELIVERY_EVENT,
                                        SCTP_AUTHENTICATION_EVENT, SCTP_STREAM_RESET_EVENT, SCTP_ASSOC_RESET_EVENT,     SCTP_STREAM_CHANGE_EVENT,
                                        SCTP_SEND_FAILED_EVENT};
-
+*/
+static uint16_t interested_events[] = {
+                          SCTP_ASSOC_CHANGE,
+                          SCTP_PEER_ADDR_CHANGE,
+                          SCTP_REMOTE_ERROR,
+                          SCTP_SHUTDOWN_EVENT,
+                          SCTP_ADAPTATION_INDICATION,
+                          SCTP_SEND_FAILED_EVENT,
+                          SCTP_STREAM_RESET_EVENT,
+                          SCTP_STREAM_CHANGE_EVENT
+};
 // TODO: error callbacks
 void SCTPWrapper::OnNotification(union sctp_notification *notify, size_t len) {
   if (notify->sn_header.sn_length != (uint32_t)len) {
@@ -221,7 +232,7 @@ bool SCTPWrapper::Initialize() {
   usrsctp_sysctl_set_sctp_ecn_enable(0);
   usrsctp_register_address(this);
 
-  sock = usrsctp_socket(AF_CONN, SOCK_STREAM, IPPROTO_SCTP, &SCTPWrapper::_OnSCTPForGS, NULL, 0, this);
+  sock = usrsctp_socket(AF_CONN, SOCK_STREAM, IPPROTO_SCTP, &SCTPWrapper::_OnSCTPForGS, NULL,  usrsctp_sysctl_get_sctp_sendspace() / 2, this);
   if (!sock) {
     logger->error("Could not create usrsctp_socket. errno={}", errno);
     return false;
@@ -235,18 +246,25 @@ bool SCTPWrapper::Initialize() {
     return false;
   }
 
+
   struct sctp_paddrparams peer_param;
   memset(&peer_param, 0, sizeof(peer_param));
   peer_param.spp_flags = SPP_PMTUD_DISABLE;
   peer_param.spp_pathmtu = 1200;  // XXX: Does this need to match the actual MTU?
-  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_PEER_ADDR_PARAMS, &peer_param, sizeof(peer_param)) == -1) {
+  peer_param.spp_flags &= ~SPP_PMTUD_ENABLE;
+  peer_param.spp_flags |= SPP_PMTUD_DISABLE;
+  // II: Check2
+  //memset(&peer_param, 0, sizeof(struct sctp_paddrparams));
+  //memcpy(&peer_param.spp_address, &addr, sizeof(struct sockaddr_conn));
+
+  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_PEER_ADDR_PARAMS, &peer_param, (socklen_t)sizeof(peer_param)) == -1) {
     logger->error("Could not set socket options for SCTP_PEER_ADDR_PARAMS. errno={}", errno);
     return false;
   }
 
   struct sctp_assoc_value av;
   av.assoc_id = SCTP_ALL_ASSOC;
-  av.assoc_value = 1;
+  av.assoc_value = SCTP_ENABLE_RESET_STREAM_REQ | SCTP_ENABLE_CHANGE_ASSOC_REQ;
   if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_ENABLE_STREAM_RESET, &av, sizeof(av)) == -1) {
     logger->error("Could not set socket options for SCTP_ENABLE_STREAM_RESET. errno={}", errno);
     return false;
@@ -258,6 +276,10 @@ bool SCTPWrapper::Initialize() {
     return false;
   }
 
+  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_REUSE_PORT, &nodelay, sizeof(nodelay)) == -1) {
+    logger->error("Could not set socket options for SCTP_REUSE_PORT. errno={}", errno);
+    return false;
+  }
   /* Enable the events of interest */
   struct sctp_event event;
   memset(&event, 0, sizeof(event));
@@ -272,6 +294,7 @@ bool SCTPWrapper::Initialize() {
     }
   }
 
+  // II: CHECK
   struct sctp_initmsg init_msg;
   memset(&init_msg, 0, sizeof(init_msg));
   init_msg.sinit_num_ostreams = MAX_OUT_STREAM;
@@ -425,7 +448,10 @@ void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
 
   spa.sendv_sndinfo.snd_sid = sid;
   // spa.sendv_sndinfo.snd_flags = SCTP_EOR | SCTP_UNORDERED;
-  spa.sendv_sndinfo.snd_flags = SCTP_EOR;
+  spa.sendv_sndinfo.snd_flags = SCTP_UNORDERED;
+  spa.sendv_sndinfo.snd_context = 0;
+  spa.sendv_sndinfo.snd_assoc_id = 0;
+  //spa.sendv_sndinfo.snd_flags = SCTP_EOR;
   spa.sendv_sndinfo.snd_ppid = htonl(ppid);
 
   // spa.sendv_prinfo.pr_policy = SCTP_PR_SCTP_RTX;
@@ -438,8 +464,7 @@ void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
       perror("Here");
       tries += 1;
       std::this_thread::sleep_for(std::chrono::seconds(tries));
-      //fsync(this->sock);
-      break;
+      //break;
     } else {
       return;
     }
