@@ -60,9 +60,9 @@ ChunkQueue messages;
     //dc->SendString(s);
     
     std::cout << "===Testing throughput using incremented strings===\n";
-    while (running && count < 723) {
+    while (running && count < 22723) {
       count += 1;
-      //std::cout << "Sending " << (size_t) i << " bytes...\n";
+      std::cout << "Sending " << (size_t) i << " bytes...\n";
       std::string test_str((size_t) i, 'A');
       try {
        //usleep(300000 * i);
@@ -88,7 +88,7 @@ ChunkQueue messages;
    // usleep(wait_1 * 1000000);
     
     std::cout << "===Testing throughput using single char spam===\n";
-    while (running && count < 419) {
+    while (running && count < 519) {
       count += 1;
       std::string test_str((size_t) i, 'A');
       try {
