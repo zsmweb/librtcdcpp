@@ -17,6 +17,9 @@
 
 #include<thread>
 
+#include<chrono>
+#include<ctime>
+
 bool running = true;
 using namespace rtcdcpp;
 #include<usrsctp.h>
@@ -38,6 +41,7 @@ void send_loop(std::shared_ptr<DataChannel> dc) {
     std::cout << "Sent message of size " << std::to_string(nRead) << std::endl;
   }
 }
+std::chrono::time_point<std::chrono::system_clock> start, end;
 ChunkQueue messages;
 
   void onDCMessage(std::string message)
