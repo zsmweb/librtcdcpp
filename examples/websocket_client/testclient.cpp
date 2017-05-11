@@ -59,56 +59,43 @@ ChunkQueue messages;
   void stress1(std::shared_ptr<DataChannel> dc) {
     int i = 1;
     int count = 0;
+    int max_count = 2000;
     int bytecount1 = 0, bytecount2 = 0;
-    //std::string s(262145, 'a');
-    //dc->SendString(s);
     
-    std::cout << "===Testing throughput using incremented strings===\n";
-    while (running && count < 22723) {
+    int j;
+    j = 32; // size in kilobytes
+    i = j * 1024;
+    std::cout << "===Testing fixed payloads of " << j << " kB " << max_count << " times===\n";
+    start = std::chrono::system_clock::now();
+    while (running && count < max_count) {
       count += 1;
-      std::cout << "Sending " << (size_t) i << " bytes...\n";
       std::string test_str((size_t) i, 'A');
       try {
-       //usleep(300000 * i);
-        
         dc->SendString(test_str);
       } catch(std::runtime_error& e) {
         std::cout << "BROKE at count: " << count << "\n";
         count--;
         break;
       }
-      i++;
       bytecount1 += i;
     }
+    end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end-start;
+
     std::cout << bytecount1 << " bytes sent.\n";
+
     int inc_stop;
     inc_stop = count;
-    i = 1; count = 0;
-    // sleep here?
+
+    i = 1; 
+    count = 0;
     int wait_1, close_wait;
     wait_1 = 4;
-    
-    //std::cout << "\nWaiting " << wait_1 << " seconds.\n";
-   // usleep(wait_1 * 1000000);
-    
-    std::cout << "===Testing throughput using single char spam===\n";
-    while (running && count < 519) {
-      count += 1;
-      std::string test_str((size_t) i, 'A');
-      try {
-        if (count == 419) { gdbbreak = 1; }
-        dc->SendString(test_str);
-      } catch(std::runtime_error& e) {
-        std::cout << "BROKE at count: " << count << "\n";
-        count--;
-        break;
-      }
-    }
-    std::cout << count << " bytes sent.\n\n";
-    std::cout << "Incremental throughput stops at: " << inc_stop << "\n";
-    std::cout << "Single char spam stops at count: " << count << "\n";
+
     std::cout << "TOTAL successful send_string calls: " << inc_stop + count << "\n";
-    std::cout << "TOTAL bytes sent: " << bytecount1 + count << "\n";
+    std::cout << "TOTAL data sent: " << bytecount1 / (1024 * 1024) << " MB\n";
+    std::cout << "TOTAL time taken: " << elapsed_seconds.count() << " seconds\n";
+    std::cout << "Data rate: " << ((bytecount1) / elapsed_seconds.count()) / (1024 * 1024) << " MB/s\n";
     
     close_wait = 3;
     std::cout << "\nWaiting " << close_wait << " seconds before closing DC.\n";
