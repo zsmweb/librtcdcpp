@@ -437,11 +437,11 @@ void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
   // spa.sendv_prinfo.pr_policy = SCTP_PR_SCTP_RTX;
   // spa.sendv_prinfo.pr_value = 0;
 
-  int tries = 0;
-  while (1) {
+  int tries = 15;
+  while (tries < 300) {
     if (usrsctp_sendv(this->sock, chunk->Data(), chunk->Length(), NULL, 0, &spa, sizeof(spa), SCTP_SENDV_SPA, 0) < 0) {
-      logger->error("FAILED to send, try: {}", tries);
-      perror("Here");
+      //logger->error("FAILED to send, trying again in {} ms. Retry count: {}", tries, tries);
+      std::this_thread::sleep_for(std::chrono::milliseconds(tries));
       tries += 1;
       std::this_thread::sleep_for(std::chrono::seconds(tries));
       //fsync(this->sock);
