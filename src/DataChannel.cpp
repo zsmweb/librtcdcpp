@@ -62,7 +62,7 @@ std::string DataChannel::GetProtocol() { return this->protocol; }
  * Close the DataChannel.
  */
 void DataChannel::Close() {
-  this->pc->ResetSCTPStream(GetStreamID(), SCTP_STREAM_RESET_OUTGOING);
+  this->pc->ResetSCTPStream(GetStreamID());
 }
 
 bool DataChannel::SendString(std::string msg) {

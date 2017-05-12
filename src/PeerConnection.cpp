@@ -348,6 +348,6 @@ void PeerConnection::CreateDataChannel(std::string label, std::string protocol) 
   create_dc.detach();
 }
 void PeerConnection::ResetSCTPStream(uint16_t stream_id) {
-  this->sctp->ResetSCTPStream(stream_id);
+  this->sctp->ResetSCTPStream(stream_id, SCTP_STREAM_RESET_OUTGOING);
 }
 }
