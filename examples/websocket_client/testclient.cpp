@@ -131,7 +131,7 @@ int main(void) {
 
 // bool run
 
-  std::function<void(std::string)> onMessage = [&messages](std::string msg) {
+  std::function<void(std::string)> onMessage = [](std::string msg) {
     messages.push(std::shared_ptr<Chunk>(new Chunk((const void *)msg.c_str(), msg.length())));
   };
 
@@ -147,10 +147,11 @@ int main(void) {
   };
 
   std::thread stress_thread;
-  std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [&dc, &messages, &stress_thread, &start_stress](std::shared_ptr<DataChannel> channel) {
+  std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [&dc](std::shared_ptr<DataChannel> channel) {
     std::cout << "Hey cool, got a data channel\n";
     dc = channel;
-    std::thread send_thread = std::thread(send_loop, channel);
+    dc->SetOnClosedCallback(onDCClose);
+    std::thread send_thread = std::thread(stress1, channel);
     send_thread.detach();
   };
 

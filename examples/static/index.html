@@ -112,7 +112,6 @@
         };
         window.sizeofpackets = 0;
         dataChannel.onmessage = function (e) {
-        datachannel_log_msg("Received message: " + e.data);
           if (sourceBuffer != null) {
             sourceBuffer.appendBuffer(e.data);
           } else {
