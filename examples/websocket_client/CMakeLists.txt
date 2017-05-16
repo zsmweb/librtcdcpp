@@ -1,4 +1,5 @@
 add_executable(testclient
+        cpslib/pslib.h
         json/json.h
         json/json-forwards.h
         easywsclient.cpp
@@ -7,7 +8,10 @@ add_executable(testclient
 	      testclient.cpp
         WebSocketWrapper.cpp
         WebSocketWrapper.hpp)
-target_link_libraries(testclient rtcdcpp)
+
+set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cpslib/")
+find_library(CPS_LIB NAMES pslib)
+target_link_libraries(testclient pslib "${CPS_LIB}" rtcdcpp)
 
 add_executable(testclientoffer
         json/json.h

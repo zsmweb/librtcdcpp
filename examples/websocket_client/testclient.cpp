@@ -9,6 +9,7 @@
 #include <rtcdcpp/Logging.hpp>
 
 #include <ios>
+#include <iomanip>
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
@@ -20,6 +21,9 @@
 #include<chrono>
 #include<ctime>
 
+extern "C" {
+#include "cpslib/pslib.h"
+}
 bool running = true;
 using namespace rtcdcpp;
 #include<usrsctp.h>
@@ -65,6 +69,9 @@ ChunkQueue messages;
     int j;
     j = 32; // size in kilobytes
     i = j * 1024;
+    std::vector<CpuTimes> cpuvec;
+    auto cpuvec_val = cpu_times(false);
+    cpuvec.push_back(*cpuvec_val);
     std::cout << "===Testing fixed payloads of " << j << " kB " << max_count << " times===\n";
     start = std::chrono::system_clock::now();
     while (running && count < max_count) {
@@ -79,10 +86,15 @@ ChunkQueue messages;
       }
       bytecount1 += i;
     }
+    cpuvec_val = cpu_times(true);
+    cpuvec.push_back(*cpuvec_val);
     end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds = end-start;
-
-    std::cout << bytecount1 << " bytes sent.\n";
+    
+    CpuTimes ct1 = cpuvec.front();
+    double *cpures = cpu_util_percent(false, &ct1);
+    std::cout << "CPU util: " << std::fixed << std::setprecision(1) << *cpures << "%\n";
+    //std::cout << bytecount1 << " bytes sent.\n";
 
     int inc_stop;
     inc_stop = count;
