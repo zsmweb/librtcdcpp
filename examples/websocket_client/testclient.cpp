@@ -129,6 +129,7 @@ int main() {
   WebSocketWrapper ws("ws://localhost:5000/channel/test");
   std::shared_ptr<PeerConnection> pc;
   std::shared_ptr<DataChannel> dc;
+
   if (!ws.Initialize()) {
     std::cout << "WebSocket connection failed\n";
     return 0;
@@ -137,7 +138,6 @@ int main() {
   RTCConfiguration config;
   config.ice_servers.emplace_back(RTCIceServer{"stun3.l.google.com", 19302});
 
-// bool run
 
   std::function<void(std::string)> onMessage = [](std::string msg) {
     messages.push(std::shared_ptr<Chunk>(new Chunk((const void *)msg.c_str(), msg.length())));
@@ -158,8 +158,7 @@ int main() {
   std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [&dc](std::shared_ptr<DataChannel> channel) {
     std::cout << "Hey cool, got a data channel\n";
     dc = channel;
-    dc->SetOnClosedCallback(onDCClose);
-    std::thread send_thread = std::thread(stress1, channel);
+    std::thread send_thread = std::thread(send_loop, channel);
     send_thread.detach();
   };
 
@@ -180,9 +179,9 @@ int main() {
     std::cout << msg << "\n";
     Json::Value root;
     if (reader.parse(msg, root)) {
-      //std::cout << "Got msg of type: " << root["type"] << "\n";
+      std::cout << "Got msg of type: " << root["type"] << "\n";
       if (root["type"] == "offer") {
-        //std::cout << "Time to get the rtc party started\n";
+        std::cout << "Time to get the rtc party started\n";
         pc = std::make_shared<PeerConnection>(config, onLocalIceCandidate, onDataChannel);
 
         pc->ParseOffer(root["msg"]["sdp"].asString());
@@ -191,7 +190,7 @@ int main() {
         answer["msg"]["sdp"] = pc->GenerateAnswer();
         answer["msg"]["type"] = "answer";
 
-        //std::cout << "Sending Answer: " << answer << "\n";
+        std::cout << "Sending Answer: " << answer << "\n";
         ws.Send(Json::writeString(msgBuilder, answer));
       } else if (root["type"] == "candidate") {
         pc->SetRemoteIceCandidate("a=" + root["msg"]["candidate"].asString());
@@ -201,9 +200,7 @@ int main() {
                 << "\n";
     }
   }
-  
   pc.reset(); //lose pc.
   ws.Close();
-  
   return 0;
 }
