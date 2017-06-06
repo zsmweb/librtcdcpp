@@ -121,8 +121,9 @@ int main(void) {
   usrsctp_sysctl_set_sctp_ecn_enable(0);
   usrsctp_sysctl_set_sctp_logging_level(1);
   usrsctp_sysctl_set_sctp_buffer_splitting(1);
+int main() {
 #ifndef SPDLOG_DISABLED
-  auto console_sink = std::make_shared<spdlog::sinks::ansicolor_sink>(spdlog::sinks::stdout_sink_mt::instance());
+  auto console_sink = spdlog::sinks::stdout_sink_mt::instance();
   spdlog::create("rtcdcpp.PeerConnection", console_sink);
   spdlog::create("rtcdcpp.SCTP", console_sink);
   spdlog::create("rtcdcpp.Nice", console_sink);
