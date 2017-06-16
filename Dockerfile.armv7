@@ -1,30 +1,31 @@
-FROM armv7/armhf-debian:latest
-ENV DEBIAN_FRONTEND noninteractive
+FROM container4armhf/armhf-alpine
 
-RUN apt-get update
-RUN apt-get install -qy cmake
-RUN apt-get install -qy python
-RUN apt-get install -qy python-flask
-RUN apt-get install -qy python-pip
-RUN apt-get install -qy g++
-RUN apt-get install -qy libssl-dev
-RUN apt-get install -qy git
+RUN apk update
+RUN apk upgrade
+RUN apk add cmake
+RUN apk add python
+RUN apk add g++
+RUN apk add openssl
+RUN apk add openssl-dev
+RUN apk add git
+RUN apk add gtk-doc
+RUN apk add libnice
+RUN apk add libnice-dev
+RUN apk add libtool
+RUN apk add m4
+RUN apk add automake
+RUN apk add python-dev
+RUN apk add libffi-dev
+RUN apk add libmount
+RUN apk add autoconf
+RUN apk add make
+RUN apk add py-pip
+RUN pip install --upgrade pip
+RUN apk add build-base
 RUN pip install setuptools
-RUN git clone https://github.com/GNOME/glib.git
-RUN apt-get install -qy gtk-doc-tools
-RUN apt-get install -qy libtool
-RUN apt-get install -qy autotools-dev
-RUN apt-get install -qy automake
-RUN apt-get install -qy python-dev
-RUN apt-get install -qy libffi-dev
-RUN apt-get install -qy libmount-dev
-RUN apt-get install -qy libpcre3-dev
-RUN cd glib && git checkout 36966334ead02df864776bf42bb81712254e3a20 && ./autogen.sh --prefix=/usr && make install
+RUN pip install flask
 ADD ./ /psl-librtcdcpp
 RUN cd /psl-librtcdcpp/usrsctp/ && sh bootstrap && ./configure && make
-RUN cp /psl-librtcdcpp/usrsctp/usrsctplib/.libs/libusrsctp.so.1.0.0 /psl-librtcdcpp/libusrsctp.so
-RUN cd /psl-librtcdcpp/libnice/ && ./autogen.sh && ./configure && make
-RUN cp /psl-librtcdcpp/libnice/agent/agent.h /psl-librtcdcpp/libnice/nice/
 WORKDIR /psl-librtcdcpp
 
-RUN cd /psl-librtcdcpp && build.sh
+RUN cd /psl-librtcdcpp && ./build.sh
