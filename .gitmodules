@@ -1,9 +1,6 @@
 [submodule "usrsctp"]
 	path = usrsctp
 	url = https://github.com/sctplab/usrsctp
-[submodule "libnice"]
-	path = libnice
-	url = https://github.com/libnice/libnice
 [submodule "spdlog"]
 	path = spdlog
 	url = https://github.com/gabime/spdlog
