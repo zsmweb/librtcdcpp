@@ -23,6 +23,7 @@ RUN pip install --upgrade pip
 RUN apk add build-base
 RUN pip install setuptools
 RUN pip install flask
+RUN pip install Flask-Sockets
 ADD ./ /psl-librtcdcpp
 RUN cd /psl-librtcdcpp/usrsctp/ && sh bootstrap && ./configure && make
 WORKDIR /psl-librtcdcpp
