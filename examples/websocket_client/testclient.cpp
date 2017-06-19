@@ -115,12 +115,7 @@ ChunkQueue messages;
     dc->Close();
     
   }
-int main(void) {
-  usrsctp_sysctl_set_sctp_debug_on(1);
-  usrsctp_sysctl_set_sctp_blackhole(2);
-  usrsctp_sysctl_set_sctp_ecn_enable(0);
-  usrsctp_sysctl_set_sctp_logging_level(1);
-  usrsctp_sysctl_set_sctp_buffer_splitting(1);
+
 int main() {
 #ifndef SPDLOG_DISABLED
   auto console_sink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
