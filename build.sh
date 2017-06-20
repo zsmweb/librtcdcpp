@@ -1,4 +1,4 @@
-cd ./usrsctp/ && sh bootstrap && ./configure && cd ./usrsctplib/ && make
+cd ./usrsctp/usrsctplib/ && make
 cd ../../
 cd examples/websocket_client/cpslib/
 make
