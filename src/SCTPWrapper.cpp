@@ -341,17 +341,16 @@ void SCTPWrapper::Stop() {
   usrsctp_deregister_address(this);
 }
 
-void SCTPWrapper::ResetSCTPStream(uint16_t stream_id) {
+void SCTPWrapper::ResetSCTPStream(uint16_t stream_id, uint16_t srs_flags) {
   struct sctp_reset_streams stream_close;
-  memset(&stream_close, 0, sizeof(stream_close));
-  stream_close.srs_assoc_id = SCTP_ALL_ASSOC; //
-  stream_close.srs_flags = SCTP_STREAM_RESET_OUTGOING;
-  stream_close.srs_number_streams = 1;
+  size_t no_of_streams = 1;
+  size_t len = sizeof(sctp_assoc_t) + (2 + no_of_streams) * sizeof(uint16_t);
+  memset(&stream_close, 0, len);
+  stream_close.srs_flags = srs_flags;
+  stream_close.srs_number_streams = no_of_streams;
   stream_close.srs_stream_list[0] = stream_id;
-  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RESET_STREAMS, &stream_close, sizeof(stream_close)) == -1) {
+  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RESET_STREAMS, &stream_close, (socklen_t)len) == -1) {
     logger->error("Could not set socket options for SCTP_RESET_STREAMS. errno={}", errno); 
-    std::cout << "CLOSE/RESET ERR!\n";
-    perror(strerror(errno));
   } else {
     logger->info("SCTP_RESET_STREAMS socket option has been set successfully");
   }

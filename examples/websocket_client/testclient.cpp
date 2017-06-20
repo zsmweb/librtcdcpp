@@ -136,11 +136,6 @@ ChunkQueue messages;
     
   }
 
-int main() {
-  void onDCMessage(std::string message)
-  {
-    std::cout << message << "\n";
-  };
 int main(void) {
 #ifndef SPDLOG_DISABLED
   auto console_sink = spdlog::sinks::stdout_sink_mt::instance();
@@ -180,7 +175,7 @@ int main(void) {
   };
 
   std::thread stress_thread;
-  std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [&dc, &messages, &stress_thread, &start_stress](std::shared_ptr<DataChannel> channel) {
+  std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [&dc, &stress_thread](std::shared_ptr<DataChannel> channel) {
     std::cout << "Hey cool, got a data channel\n";
     dc = channel;
     std::thread send_thread = std::thread(send_loop, channel);

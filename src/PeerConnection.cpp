@@ -293,15 +293,6 @@ void PeerConnection::HandleDataChannelClose(uint16_t sid) {
   cur_channel->OnClosed();
 }
 
-void PeerConnection::HandleDataChannelClose(uint16_t sid) {
-  auto cur_channel = GetChannel(sid);
-  if (!cur_channel) {
-    logger->warn("Received close for unknown channel: {}", sid);
-    return;
-  }
-  cur_channel->OnClosed();
-}
-
 void PeerConnection::HandleStringMessage(ChunkPtr chunk, uint16_t sid) {
   auto cur_channel = GetChannel(sid);
   if (!cur_channel) {
