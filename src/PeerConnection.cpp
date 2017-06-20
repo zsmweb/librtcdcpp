@@ -334,7 +334,7 @@ void PeerConnection::SendBinaryMsg(const uint8_t *data, int len, uint16_t sid) {
   }
 }
 
-void PeerConnection::CreateDataChannel(std::string label, std::string protocol) {
+std::shared_ptr<DataChannel> PeerConnection::CreateDataChannel(std::string label, std::string protocol) {
   uint16_t sid;
   if (this->role == 0) {
     sid = 0;
@@ -357,6 +357,7 @@ void PeerConnection::CreateDataChannel(std::string label, std::string protocol) 
   std::thread create_dc = std::thread(&SCTPWrapper::CreateDCForSCTP, sctp.get(), label, protocol);
   logger->info("Spawning create_dc thread");
   create_dc.detach();
+  return new_channel;
 }
 void PeerConnection::ResetSCTPStream(uint16_t stream_id) {
   this->sctp->ResetSCTPStream(stream_id, SCTP_STREAM_RESET_OUTGOING);
