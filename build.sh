@@ -1,3 +1,5 @@
+cd /psl-librtcdcpp/usrsctp/ && sh bootstrap && ./configure && make
+cd ../
 cd examples/websocket_client/cpslib/
 make
 cd ../../../
