@@ -2,12 +2,14 @@ cmake_minimum_required(VERSION 3.0)
 
 project(librtcdcpp
         VERSION 1.0.0
-        LANGUAGES CXX)
+        LANGUAGES C CXX)
 
 option(DISABLE_SPDLOG "Disable Spdlog")
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_MACOSX_RPATH 1)
+
+SET(CMAKE_C_COMPILER /usr/bin/gcc)
 
 # Custom CMake modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/Modules")
@@ -28,7 +30,8 @@ set(LIB_HEADERS
         include/rtcdcpp/NiceWrapper.hpp
         include/rtcdcpp/PeerConnection.hpp
         include/rtcdcpp/RTCCertificate.hpp
-        include/rtcdcpp/SCTPWrapper.hpp)
+        include/rtcdcpp/SCTPWrapper.hpp
+        include/rtcdcpp/librtcdcpp.h)
 
 set(LIB_SOURCES
         src/DataChannel.cpp
@@ -37,7 +40,8 @@ set(LIB_SOURCES
         src/NiceWrapper.cpp
         src/PeerConnection.cpp
         src/RTCCertificate.cpp
-        src/SCTPWrapper.cpp)
+        src/SCTPWrapper.cpp
+        src/librtcdcpp.cpp)
 
 add_library(rtcdcpp SHARED
         ${LIB_HEADERS}
