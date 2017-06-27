@@ -29,6 +29,8 @@
  * C Wrapper around the C++ classes.
  */
 
+#include <unistd.h>
+
 #include <rtcdcpp/PeerConnection.hpp>
 #include <rtcdcpp/librtcdcpp.h> //hpp?
 #include <rtcdcpp/DataChannel.hpp>
@@ -51,7 +53,6 @@ extern "C" {
   }
 
   PeerConnection* newPeerConnection(RTCConfiguration_C config_c, on_ice_cb ice_cb, on_dc_cb dc_cb) {
-    
     std::function<void(rtcdcpp::PeerConnection::IceCandidate)> onLocalIceCandidate = [ice_cb](rtcdcpp::PeerConnection::IceCandidate candidate) 
     {
       IceCandidate_C ice_cand_c;
@@ -102,13 +103,17 @@ extern "C" {
   const char* GenerateOffer(PeerConnection *pc) {
     std::string ret_val;
     ret_val = pc->GenerateOffer();
-    return ret_val.c_str(); //
+    char* ret_val1 = (char*) malloc(ret_val.size());
+    snprintf(ret_val1, ret_val.size(), ret_val.c_str());
+    return ret_val1; //
   }
 
   const char* GenerateAnswer(PeerConnection *pc) {
     std::string ret_val;
     ret_val = pc->GenerateAnswer();
-    return ret_val.c_str();
+    char* ret_val1 = (char*) malloc(ret_val.size());
+    snprintf(ret_val1, ret_val.size(), ret_val.c_str());
+    return ret_val1;
   }
 
   bool SetRemoteIceCandidate(PeerConnection *pc, const char* candidate_sdp) {
