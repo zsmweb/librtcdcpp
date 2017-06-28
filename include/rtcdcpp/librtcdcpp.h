@@ -44,8 +44,8 @@ PeerConnection* newPeerConnection(struct RTCConfiguration_C config, on_ice_cb ic
 void destroyPeerConnection(PeerConnection* pc);
 
 void ParseOffer(PeerConnection* pc, const char* sdp);
-const char* GenerateOffer(PeerConnection* pc);
-const char* GenerateAnswer(PeerConnection* pc);
+char* GenerateOffer(PeerConnection* pc);
+char* GenerateAnswer(PeerConnection* pc);
 
 bool SetRemoteIceCandidate(PeerConnection* pc, const char* candidate_sdp); 
 bool SetRemoteIceCandidates(PeerConnection* pc, const GArray* candidate_sdps);

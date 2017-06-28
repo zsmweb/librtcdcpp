@@ -11,7 +11,6 @@
 #include <stdbool.h>
 #include <memory>
 #include <functional>
-//using namespace rtcdcpp;
 #include <iostream>
 #include <sys/types.h>
 
@@ -73,7 +72,7 @@ extern "C" {
     pc->ParseOffer(sdp_string);
   }
 
-  const char* GenerateOffer(PeerConnection *pc) {
+  char* GenerateOffer(PeerConnection *pc) {
     std::string ret_val;
     ret_val = pc->GenerateOffer();
     char* ret_val1 = (char*) malloc(ret_val.size());
@@ -81,7 +80,7 @@ extern "C" {
     return ret_val1; //
   }
 
-  const char* GenerateAnswer(PeerConnection *pc) {
+  char* GenerateAnswer(PeerConnection *pc) {
     std::string ret_val;
     ret_val = pc->GenerateAnswer();
     char* ret_val1 = (char*) malloc(ret_val.size());
