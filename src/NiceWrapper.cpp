@@ -285,7 +285,8 @@ std::string NiceWrapper::GenerateLocalSDP() {
   nice_sdp << raw_sdp;
 
   while (std::getline(nice_sdp, line)) {
-    if (g_str_has_prefix(line.c_str(), "a=ice-ufrag:") || g_str_has_prefix(line.c_str(), "a=ice-pwd:")) {
+    if (g_str_has_prefix(line.c_str(), "a=ice-ufrag:") || g_str_has_prefix(line.c_str(), "a=ice-pwd:")
+          || g_str_has_prefix(line.c_str(), "a=candidate:")) {
       result << line << "\r\n";
     }
   }
