@@ -93,7 +93,6 @@ void closeDataChannel(DataChannel *dc);
 //DataChannel Callback related methods
 typedef void (*open_cb)(void);
 typedef void (*on_string_msg)(const char* message);
-typedef void (*on_string_msg)(const char* message);
 typedef void (*on_binary_msg)(void* message);
 typedef void (*on_close)(void);
 typedef void (*on_error)(const char* description);
