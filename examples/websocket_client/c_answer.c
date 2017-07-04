@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 
+/* Custom multiline stdin scanning function */
 gchar* getlines() {
 	size_t len = 0, linesize, inc_size;
 	gchar *line, *lines=NULL;
@@ -24,6 +25,7 @@ gchar* getlines() {
 	lines[inc_size + 1] = '\0';
 	return lines;
 }
+/* end of custom multiline stdin scanning function */
 
 int main() {
 	struct RTCIceServer_C rtc_ice;
@@ -48,24 +50,17 @@ int main() {
 
 	struct PeerConnection* pc;
 	pc = newPeerConnection(rtc_conf, onIceCallback, onDCCallback);
-	
-  int repeat = 0;
-  while(repeat < 2) {
-  printf("\n========================\n");
-    char* answer = GenerateAnswer(pc);
-    gchar* answer_e = g_base64_encode(answer, strlen(answer));
-    printf("\nAnswer:\n%s\n", answer_e);
-    printf("\n\nEnter offer SDP:\n");
-    gchar *received_sdp = getlines();
-    gchar *decoded_sdp_len;
-    received_sdp = g_base64_decode(received_sdp, &decoded_sdp_len);
-    ParseOffer(pc, received_sdp);
-    free(answer);
-    repeat += 1;
-    if (repeat == 1) {
-      printf("\n Let's do that exact dance again to get ICE candidates exchanged the non trickle way\n");
-    }
-  }
+	ParseOffer(pc, ""); // Leads to ICE candidates being saved in next Generate SDP call
+  char* answer = GenerateAnswer(pc);
+  gchar* answer_e = g_base64_encode(answer, strlen(answer));
+  printf("\nAnswer:\n%s\n", answer_e);
+  printf("\n\nEnter offer SDP:\n");
+  gchar *received_sdp = getlines();
+  gchar *decoded_sdp_len;
+  received_sdp = g_base64_decode(received_sdp, &decoded_sdp_len);
+  ParseOffer(pc, received_sdp);
+  free(answer);
+
 	while(1) {
 		usleep(1);
 	}
