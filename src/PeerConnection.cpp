@@ -128,7 +128,7 @@ std::string random_session_id() {
 std::string PeerConnection::GenerateOffer() {
   std::stringstream sdp;
   std::string session_id = random_session_id();
-  SPDLOG_TRACE(logger, "Generating Answer SDP: session_id={}", session_id);
+  SPDLOG_TRACE(logger, "Generating Offer SDP: session_id={}", session_id);
 
   sdp << "v=0\r\n";
   sdp << "o=- " << session_id << " 0 IN IP4 0.0.0.0\r\n";  // Session ID
