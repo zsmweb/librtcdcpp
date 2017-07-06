@@ -61,12 +61,12 @@ PeerConnection::~PeerConnection() {
 }
 
 bool PeerConnection::Initialize() {
+  srand((unsigned)time(nullptr));
   this->nice = make_unique<NiceWrapper>(this);
   this->dtls = make_unique<DTLSWrapper>(this);
   this->sctp = make_unique<SCTPWrapper>(
       std::bind(&DTLSWrapper::EncryptData, dtls.get(), std::placeholders::_1),
       std::bind(&PeerConnection::OnSCTPMsgReceived, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-
   if (!dtls->Initialize()) {
     logger->error("DTLS failure");
     return false;
@@ -118,9 +118,7 @@ void PeerConnection::ParseOffer(std::string offer_sdp) {
 
 std::string random_session_id() {
   const static char *numbers = "0123456789";
-  srand((unsigned)time(nullptr));
   std::stringstream result;
-
   for (int i = 0; i < SESSION_ID_SIZE; ++i) {
     int r = rand() % 10;
     result << numbers[r];
