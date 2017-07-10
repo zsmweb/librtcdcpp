@@ -11,7 +11,7 @@ ffibuilder.set_source("libpyrtcdcpp",
         #include <sys/types.h>
         #include "rtcdcpp/librtcdcpp.h"
         """,
-        include_dirs = ["../src/", "../include", "/usr/include/glib-2.0", "/usr/lib64/glib-2.0/include"],
+        include_dirs = ["../src/", "../include", "/usr/include/glib-2.0", "/usr/lib64/glib-2.0/include", "/usr/lib/glib-2.0/include"],
         libraries = ["rtcdcpp"],
         library_dirs = ["../"])
 
