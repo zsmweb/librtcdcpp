@@ -24,8 +24,13 @@ RUN apk add build-base
 RUN pip install setuptools
 RUN pip install flask
 RUN pip install Flask-Sockets
+RUN apk add python3
+RUN python3 -m ensurepip
+RUN apk add python3-dev
+RUN pip3 install --upgrade pip setuptools
+RUN pip3 install cffi
 ADD ./ /psl-librtcdcpp
 RUN cd /psl-librtcdcpp/usrsctp/ && sh ./bootstrap && ./configure 
 WORKDIR /psl-librtcdcpp
 
-RUN cd /psl-librtcdcpp && ./build.sh
+RUN cd /psl-librtcdcpp && ./python/ && ./build.sh
