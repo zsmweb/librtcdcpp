@@ -6,8 +6,9 @@ class DataChannel():
         self.dc = dc
 
     def SendString(self, msg:str):
-        msg = ffi.new("char[]", bytes(msg, 'utf-8'))
-        lib.SendString(self.dc, msg)
+        if len(msg) > 0:
+            msg = ffi.new("char[]", bytes(msg, 'utf-8'))
+            lib.SendString(self.dc, msg)
 
     def SendBinary(self, msg:bytes):
         msg = ffi.new("u_int_8_t", msg) 
