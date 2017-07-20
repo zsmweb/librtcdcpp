@@ -6,20 +6,22 @@ from base64 import b64encode, b64decode
 got_dc = False
 
 ### CALLBACKS ###
-def onIceCallback(ice):
-    pass # We don't want trickle ICE now
+class Peer(PeerConnection):
+    def onCandidate(self, ice):
+        pass # We don't want trickle ICE now
 
-def onMessage(msg):
-    print("\nMESSAGE: " + msg + "\n")
+    def onMessage(self, msg):
+        print("\nMESSAGE: " + msg + "\n")
 
-def gotDC(dc):
-    global got_dc
-    got_dc = True
-    dc.SetOnStringMsgCallback(onMessage)
-    print("\n=======Got DC=======\n")
+    def onChannel(self, dc):
+        global got_dc
+        got_dc = True
+        print("\n=======Got DC=======\n")
 
-rtc_conf = RTCConf([("stun3.l.google.com", 19302)]) # Config/setting for STUN server
-pc1 = PeerConnection(rtc_conf, onIceCallback, gotDC)
+    def onClose(self):
+        print("DC Closed")
+
+pc1 = Peer()
 pc1.ParseOffer('') # This is to trigger the collection of candidates in sdp (we want a non trickle way to connect)
 
 # pc1 generates the offer, so we create the datachannel object
