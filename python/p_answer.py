@@ -11,7 +11,8 @@ class Peer(PeerConnection):
         pass # We don't want trickle ICE now
 
     def onMessage(self, msg):
-        print("\nMESSAGE: " + msg + "\n")
+        #print("\nMESSAGE: " + msg + "\n")
+        pass
 
     def onChannel(self, dc):
         global dataChan
@@ -36,6 +37,7 @@ pc1.ParseOffer(offer.decode('utf-8'))
 
 while True:
     if got_dc:
-        msg = input("Enter msg: ")
-        dataChan.SendString(msg)
+        #msg = input("Enter msg: ")
+        #dataChan.SendString(msg)
+        pass
     sleep(1)
