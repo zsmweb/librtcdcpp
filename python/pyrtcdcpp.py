@@ -71,7 +71,48 @@ class RTCConf():
         self._ice_pwd = ice_pwd
 
 class PeerConnection():
-    def __init__(self, rtc_conf:RTCConf, onIceCallback_p = None, onDCCallback_p = None):
+    # Methods that could be overridden.
+    def onMessage(self, message):
+        '''
+        When a message is received on the data channel
+        '''
+        pass
+
+    def onClose(self):
+        '''
+        When the data channel closes
+        '''
+        pass
+
+    def onChannel(self, channel):
+        '''
+        When data channel is obtained
+        '''
+        pass
+
+    def onCandidate(self, candidate):
+        '''
+        When the peer connection gets a new local ICE candidate
+        '''
+        pass
+
+    # Private methods
+    def _onChannel(self, channel):
+        # Set our private onMessage and onClose callbacks
+        channel.SetOnClosedCallback(self.onClose)
+        channel.SetOnStringMsgCallback(self.onMessage)
+        channel.SetOnBinaryMsgCallback(self.onMessage)
+        self.onChannel(channel)
+
+    def __init__(self, rtc_conf:RTCConf = None, onIceCallback_p = None, onDCCallback_p = None):
+        if rtc_conf is None:
+            rtc_conf = RTCConf([("stun3.l.google.com", 19302)]) # Hardcoded default config/setting for STUN server
+
+        if onIceCallback_p is None:
+            onIceCallback_p = self.onCandidate
+        if onDCCallback_p is None:
+            onDCCallback_p = self._onChannel
+
         garray = ffi.new("GArray* ice_servers")
         ice_struct = ffi.new("struct RTCIceServer_C *")
         garray = lib.g_array_new(False, False, ffi.sizeof(ice_struct[0]))
