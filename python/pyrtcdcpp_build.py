@@ -44,8 +44,8 @@ cdef_string += '''
 extern "Python" void onDCCallback(DataChannel *dc);
 extern "Python" void onIceCallback(IceCandidate_C ice);
 
-extern "Python" void onOpen(void);
-extern "Python" void onClose(void);
+extern "Python" void onOpened(void);
+extern "Python" void onClosed(void);
 extern "Python" void onStringMsg(const char* message);
 extern "Python" void onBinaryMsg(void* message);
 extern "Python" void onError(const char* description);

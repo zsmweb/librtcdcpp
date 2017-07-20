@@ -12,11 +12,11 @@ class DataChannel():
 
     def SendBinary(self, msg:bytes):
         msg = ffi.new("u_int_8_t", msg) 
-        lib.SendBinary(self.dc, msg,len(msg))
+        lib.SendBinary(self.dc, msg, len(msg))
 
     def SetOnOpen(self, on_open):
         @ffi.def_extern()
-        def onOpen():
+        def onOpened():
             if on_open is not None:
                 on_open()
         lib.SetOnOpen(self.dc, lib.onOpen)
@@ -90,7 +90,7 @@ class PeerConnection():
             if onDCCallback_p is not None:
                 argument = DataChannel(dc)
                 onDCCallback_p(argument)
-
+        
         @ffi.def_extern()
         def onIceCallback(ice):
             if onIceCallback_p is not None:
