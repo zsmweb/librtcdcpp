@@ -22,6 +22,15 @@ set_target_properties(c_offer
   PROPERTIES LINKER_LANGUAGE C
   )
 
+add_executable(2in1
+            2in1.c
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../include/rtcdcpp/librtcdcpp.h"
+            )
+target_link_libraries(2in1 rtcdcpp)
+set_target_properties(2in1
+  PROPERTIES LINKER_LANGUAGE C
+  )
+
 add_executable(c_answer
             c_answer.c
             "${CMAKE_CURRENT_SOURCE_DIR}/../../include/rtcdcpp/librtcdcpp.h"
