@@ -4,6 +4,7 @@
 
 #include <unistd.h>
 #include <strings.h>
+#include <stdio.h>
 
 #include <rtcdcpp/PeerConnection.hpp>
 #include <rtcdcpp/librtcdcpp.h> //hpp?
@@ -89,8 +90,11 @@ extern "C" {
     // Pipes read() would block.
     
     
-    int f_desc[2];
-    pipe(f_desc);
+    int f_desc[2]; int flags = 0;
+
+    if (pipe2(f_desc, flags | O_DIRECT) < 0) {
+      printf("\nPipe error");
+    }
     pid_t cpid = fork();
 
     if (cpid == 0) {
@@ -105,8 +109,10 @@ extern "C" {
       int command;
 
       while(alive) {
-        printf("\nWaiting for command to be written to %d\n", f_desc[1]);
-        read(f_desc[0], &command, sizeof(int));
+        //printf("\nWaiting for command to be written to %d\n", f_desc[1]);
+        if (read(f_desc[0], &command, sizeof(int)) == 0){
+  printf("\n Error, write end is closed!");
+        }
         printf("\nCOMMAND INT: %d\n", command);
         switch(command) {
           case DESTROY_PC:
@@ -119,11 +125,11 @@ extern "C" {
             break;
           case GENERATE_OFFER:
             char *offer;
-            printf("\nInside generate offer\n");
             offer = _GenerateOffer(child_pc);
             size_t length;
             length = strlen(offer);
             write(f_desc[1], &length, sizeof(size_t));
+            fsync(f_desc[1]);
             write(f_desc[1], offer, length); 
             break;
           case GENERATE_ANSWER:

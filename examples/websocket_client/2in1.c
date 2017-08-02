@@ -5,6 +5,9 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <fcntl.h>
+//#include "/usr/include/linux/fcntl.h"
+
 gchar* getlines() {
 	size_t len = 0, linesize, inc_size;
 	gchar *line, *lines=NULL;
@@ -67,7 +70,11 @@ int main() {
   int repeat = 0;
   while(repeat < 1) {
   printf("\n========================\n");
-    usleep(3000000);
+  
+  //int pipe_size = fcntl(fdes1.first, F_GETPIPE_SZ);
+  //printf("\nPipe size of fdes1 read end:%d\n", pipe_size);
+  
+  usleep(1000000);
     char* offer = GenerateOffer(fdes1);
     //gchar* offer_e = g_base64_encode(offer, strlen(offer));
     //printf("\nOffer:\n%s\n", offer_e);

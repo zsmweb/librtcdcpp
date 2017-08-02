@@ -28,7 +28,8 @@ gchar* getlines() {
 /* end of custom multiline stdin scanning function */
 
 int main() {
-	struct RTCIceServer_C rtc_ice;
+	/*
+  struct RTCIceServer_C rtc_ice;
 	rtc_ice.hostname = "stun3.l.google.com";
 	rtc_ice.port = 19302;
 	struct RTCConfiguration_C rtc_conf;
@@ -64,5 +65,6 @@ int main() {
 	while(1) {
 		usleep(1);
 	}
+  */
 	return 0;
 }
