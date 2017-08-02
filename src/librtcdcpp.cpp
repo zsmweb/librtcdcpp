@@ -3,6 +3,7 @@
  */
 
 #include <unistd.h>
+#include <strings.h>
 
 #include <rtcdcpp/PeerConnection.hpp>
 #include <rtcdcpp/librtcdcpp.h> //hpp?
@@ -14,6 +15,28 @@
 #include <iostream>
 #include <sys/types.h>
 
+#include <zmq.hpp>
+
+#define DESTROY_PC 0
+#define PARSE_SDP 1
+#define GENERATE_OFFER 2
+#define GENERATE_ANSWER 3
+#define SET_REMOTE_ICE_CAND 4
+#define SET_REMOTE_ICE_CANDS 5
+#define CREATE_DC 6
+#define GET_DC_SID 7
+#define GET_DC_TYPE 8
+#define GET_DC_LABEL 9
+#define GET_DC_PROTO 10
+#define SEND_STRING 11
+#define SEND_BINARY 12
+#define CLOSE_DC 13
+#define SET_ON_OPEN_CB 14
+#define SET_ON_STRING_MSG_CB 15
+#define SET_ON_BINARY_MSG_CB 16
+#define SET_ON_CLOSED_CB 17
+#define SET_ON_ERROR_CB 18
+
 extern "C" {
   IceCandidate_C* newIceCandidate(const char* candidate, const char* sdpMid, int sdpMLineIndex) {
     //IceCandidate_C ice_cand;
@@ -24,7 +47,7 @@ extern "C" {
     return ice_cand;
   }
 
-  PeerConnection* newPeerConnection(RTCConfiguration_C config_c, on_ice_cb ice_cb, on_dc_cb dc_cb) {
+  f_descriptors newPeerConnection(RTCConfiguration_C config_c, on_ice_cb ice_cb, on_dc_cb dc_cb) {
     std::function<void(rtcdcpp::PeerConnection::IceCandidate)> onLocalIceCandidate = [ice_cb](rtcdcpp::PeerConnection::IceCandidate candidate) 
     {
       IceCandidate_C ice_cand_c;
@@ -60,27 +83,183 @@ extern "C" {
       config.certificates.emplace_back(&rtc_cert);
     }
     */
-    return (PeerConnection*) new rtcdcpp::PeerConnection(config, onLocalIceCandidate, onDataChannel);
+    // Fork a new process, keep it alive somehow to avoid destructors being called.
+    // record pid of fork or record the file descriptors for IPC
+    // MQ/sockets/pipes.
+    // Pipes read() would block.
+    
+    
+    int f_desc[2];
+    pipe(f_desc);
+    pid_t cpid = fork();
+
+    if (cpid == 0) {
+      //child
+      PeerConnection* child_pc;
+
+      DataChannel* child_dc;
+      child_pc = new rtcdcpp::PeerConnection(config, onLocalIceCandidate, onDataChannel);
+      //write(f_desc[1], child_pc, sizeof(PeerConnection));
+      // READ for next command and arg from IPC. It will conveniently block and process it.
+      bool alive = true;
+      int command;
+
+      while(alive) {
+        printf("\nWaiting for command to be written to %d\n", f_desc[1]);
+        read(f_desc[0], &command, sizeof(int));
+        printf("\nCOMMAND INT: %d\n", command);
+        switch(command) {
+          case DESTROY_PC:
+            _destroyPeerConnection(child_pc);
+            break;
+          case PARSE_SDP:
+            char *args_char;
+            read(f_desc[0], &args_char, sizeof(args_char)); //just store the pointer
+            _ParseOffer(child_pc, args_char);
+            break;
+          case GENERATE_OFFER:
+            char *offer;
+            printf("\nInside generate offer\n");
+            offer = _GenerateOffer(child_pc);
+            size_t length;
+            length = strlen(offer);
+            write(f_desc[1], &length, sizeof(size_t));
+            write(f_desc[1], offer, length); 
+            break;
+          case GENERATE_ANSWER:
+            char* answer;
+            answer = _GenerateAnswer(child_pc);
+            write(f_desc[1], answer, strlen(answer));
+            break;
+          case SET_REMOTE_ICE_CAND:
+            bool ret_bool;
+            read(f_desc[0], args_char, sizeof(args_char));
+            ret_bool = _SetRemoteIceCandidate(child_pc, args_char);
+            write(f_desc[1], &ret_bool, sizeof(bool));
+            break;
+          case SET_REMOTE_ICE_CANDS:
+            GArray *args_garray; //GArray
+            read(f_desc[0], &args_garray, sizeof(args_garray));
+            ret_bool = _SetRemoteIceCandidates(child_pc, args_garray);
+            write(f_desc[1], &ret_bool, sizeof(bool));
+            break;
+          case CREATE_DC:
+            char *label; char *proto;
+            read(f_desc[0], &label, sizeof(char *));
+            read(f_desc[0], &proto, sizeof(char *));
+            child_dc = _CreateDataChannel(child_pc, label, proto);
+            break;
+          case GET_DC_SID:
+            u_int16_t sid; 
+            sid = _getDataChannelStreamID(child_dc);
+            write(f_desc[1], &sid, sizeof(sid));
+            break;
+          case GET_DC_TYPE:
+            u_int8_t type;
+            type = _getDataChannelType(child_dc);
+            write(f_desc[1], &type, sizeof(type));
+            break;
+          case GET_DC_LABEL:
+            const char* chan_label;
+            chan_label = _getDataChannelLabel(child_dc);
+            write(f_desc[1], chan_label, sizeof(chan_label));
+            break;
+          case GET_DC_PROTO:
+            const char* chan_proto;
+            chan_proto = _getDataChannelProtocol(child_dc);
+            write(f_desc[1], chan_proto, sizeof(chan_proto));
+            break;
+          case SEND_STRING:
+            // !
+            read(f_desc[0], args_char, sizeof(args_char));
+            ret_bool = _SendString(child_dc, args_char);
+            write(f_desc[1], &ret_bool, sizeof(ret_bool));
+            break;
+          case SEND_BINARY:
+            u_int8_t len;
+            u_int8_t *msg_8t;
+            read(f_desc[0], msg_8t, sizeof(msg_8t));
+            read(f_desc[0], &len, sizeof(len));
+            ret_bool = _SendBinary(child_dc, msg_8t, len);
+            write(f_desc[1], &ret_bool, sizeof(ret_bool));
+            break;
+          case SET_ON_OPEN_CB:
+            //Get onOpenCB function pointer
+            open_cb open_callback;
+            read(f_desc[0], &open_callback, sizeof(open_callback));
+            //_SetOnOpen(child_dc, open_callback);
+            break;
+          case SET_ON_STRING_MSG_CB:
+            on_string_msg string_callback;
+            read(f_desc[0], &string_callback, sizeof(string_callback));
+            //_SetOnStringMsgCallback(child_dc, string_callback);
+            break;
+          case SET_ON_BINARY_MSG_CB:
+            on_binary_msg binary_callback;
+            read(f_desc[0], &binary_callback, sizeof(binary_callback));
+            //_SetOnBinaryMsgCallback(child_dc, binary_callback);
+            break;
+          case SET_ON_ERROR_CB:
+            on_error error_callback;
+            read(f_desc[0], &error_callback, sizeof(error_callback));
+            //_SetOnErrorCallback(child_dc, error_callback);
+            break;
+          case SET_ON_CLOSED_CB:
+            on_close close_callback;
+            read(f_desc[0], &close_callback, sizeof(close_callback));
+            //_SetOnClosedCallback(child_dc, close_callback);
+            break;
+          default:
+            break;
+        }
+      }
+    }
+
+    //PeerConnection* return_pc;
+    //read(f_desc[0], &return_pc, sizeof(PeerConnection));
+
+    //close(f_desc[0]);
+    //close(f_desc[1]);
+    //return (PeerConnection*) return_pc;
+    
+    f_descriptors fdr;
+    fdr.first = f_desc[0];
+    fdr.second = f_desc[1];
+    return fdr;
+    //return (PeerConnection*) new rtcdcpp::PeerConnection(config, onLocalIceCandidate, onDataChannel);
   }
+
   
-  void destroyPeerConnection(PeerConnection *pc) {
+  void _destroyPeerConnection(PeerConnection *pc) {
     delete pc;
   }
 
-  void ParseOffer(PeerConnection* pc, const char* sdp) {
+  void _ParseOffer(PeerConnection* pc, const char* sdp) {
     std::string sdp_string (sdp);
     pc->ParseOffer(sdp_string);
   }
 
-  char* GenerateOffer(PeerConnection *pc) {
+  char* GenerateOffer(f_descriptors fd) {
+    int command = GENERATE_OFFER;
+    printf("\nSending a command %d to %d\n", command, fd.second);
+    write(fd.second, &command, sizeof(int));
+    printf("\nSent done\n");
+    size_t len;
+    read(fd.first, &len, sizeof(size_t));
+    char *offer = (char*) malloc(len);
+    read(fd.first, offer, len);
+    return offer;
+  }
+
+  char* _GenerateOffer(PeerConnection *pc) {
     std::string ret_val;
     ret_val = pc->GenerateOffer();
     char* ret_val1 = (char*) malloc(ret_val.size());
     snprintf(ret_val1, ret_val.size(), ret_val.c_str());
-    return ret_val1; //
+    return ret_val1;
   }
 
-  char* GenerateAnswer(PeerConnection *pc) {
+  char* _GenerateAnswer(PeerConnection *pc) {
     std::string ret_val;
     ret_val = pc->GenerateAnswer();
     char* ret_val1 = (char*) malloc(ret_val.size());
@@ -88,12 +267,12 @@ extern "C" {
     return ret_val1;
   }
 
-  bool SetRemoteIceCandidate(PeerConnection *pc, const char* candidate_sdp) {
+  bool _SetRemoteIceCandidate(PeerConnection *pc, const char* candidate_sdp) {
     std::string candidate_sdp_string (candidate_sdp);
     return pc->SetRemoteIceCandidate(candidate_sdp_string);
   }
 
-  bool SetRemoteIceCandidates(PeerConnection *pc, const GArray* candidate_sdps) {
+  bool _SetRemoteIceCandidates(PeerConnection *pc, const GArray* candidate_sdps) {
     std::vector<std::string> candidate_sdps_vec;
     for(int i = 0; i <= candidate_sdps->len; i++) {
       std::string candidate_sdp_string (&g_array_index(candidate_sdps, char, i));
@@ -102,7 +281,7 @@ extern "C" {
     return pc->SetRemoteIceCandidates(candidate_sdps_vec);
   }
 
-  DataChannel* CreateDataChannel(PeerConnection *pc, const char* label, const char* protocol) {
+  DataChannel* _CreateDataChannel(PeerConnection *pc, const char* label, const char* protocol) {
     std::string label_string (label);
     std::string protocol_string (protocol);
     if (protocol_string.size() > 0) {
@@ -112,65 +291,65 @@ extern "C" {
     }
   }
 
-  u_int16_t getDataChannelStreamID(DataChannel *dc) {
+  u_int16_t _getDataChannelStreamID(DataChannel *dc) {
     return dc->GetStreamID();
   }
 
-  u_int8_t getDataChannelType(DataChannel *dc) {
+  u_int8_t _getDataChannelType(DataChannel *dc) {
     return dc->GetChannelType();
   }
 
-  const char* getDataChannelLabel(DataChannel *dc) {
+  const char* _getDataChannelLabel(DataChannel *dc) {
     std::string dc_label_string; 
     dc_label_string = dc->GetLabel();
     return dc_label_string.c_str();
   }
 
-  const char* getDataChannelProtocol(DataChannel *dc) {
+  const char* _getDataChannelProtocol(DataChannel *dc) {
     std::string dc_proto_string;
     dc_proto_string = dc->GetProtocol();
     return dc_proto_string.c_str();
   }
 
-  bool SendString(DataChannel *dc, const char* msg) {
+  bool _SendString(DataChannel *dc, const char* msg) {
     std::string message (msg);
     return dc->SendString(message);
   }
 
-  bool SendBinary(DataChannel *dc, const u_int8_t *msg, int len) {
+  bool _SendBinary(DataChannel *dc, u_int8_t *msg, int len) {
     return dc->SendBinary(msg, len);
   }
   
-  void closeDataChannel(DataChannel *dc) {
+  void _closeDataChannel(DataChannel *dc) {
     delete dc;
   }
 
-  void SetOnOpen(DataChannel *dc, open_cb on_open_cb) {
+  void _SetOnOpen(DataChannel *dc, open_cb on_open_cb) {
     dc->SetOnOpen(on_open_cb);
   }
 
-  void SetOnStringMsgCallback(DataChannel *dc, on_string_msg recv_str_cb) {
+  void _SetOnStringMsgCallback(DataChannel *dc, on_string_msg recv_str_cb) {
     std::function<void(std::string string1)> recv_callback = [recv_str_cb](std::string string1) {
       recv_str_cb(string1.c_str());
     };
     dc->SetOnStringMsgCallback(recv_callback);
   }
 
-  void SetOnBinaryMsgCallback(DataChannel *dc, on_binary_msg msg_binary_cb) {
+  void _SetOnBinaryMsgCallback(DataChannel *dc, on_binary_msg msg_binary_cb) {
     std::function<void(rtcdcpp::ChunkPtr)> msg_binary_callback = [msg_binary_cb](rtcdcpp::ChunkPtr chkptr) {
       msg_binary_cb((void *) chkptr.get()->Data());
     };
     dc->SetOnBinaryMsgCallback(msg_binary_callback);
   }
 
-  void SetOnClosedCallback(DataChannel *dc, on_close close_cb) {
+  void _SetOnClosedCallback(DataChannel *dc, on_close close_cb) {
     std::function<void()> close_callback = [close_cb]() {
       close_cb();
     };
     dc->SetOnClosedCallback(close_callback);
   }
 
-  void SetOnErrorCallback(DataChannel *dc, on_error error_cb) {
+  void _SetOnErrorCallback(DataChannel *dc, on_error error_cb) {
     std::function<void(std::string description)> error_callback = [error_cb](std::string description) {
       error_cb(description.c_str());
     };
