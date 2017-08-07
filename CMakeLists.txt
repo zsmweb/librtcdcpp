@@ -61,6 +61,7 @@ target_include_directories(rtcdcpp
 
 target_link_libraries(rtcdcpp
         PUBLIC
+        zmq
         LibNice::LibNice
         SctpLab::UsrSCTP
         OpenSSL::SSL
