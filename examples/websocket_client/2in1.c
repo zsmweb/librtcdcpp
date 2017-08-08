@@ -57,10 +57,10 @@ int main() {
 
 	struct DataChannel* dc;
 
-	void onDCCallback(dc) {
+	void onDCCallback(struct DataChannel* dc) {
 		printf("\n========Got datachannel!=========\n");
 	}
-  void onDCCallback1(dc) {
+  void onDCCallback1(struct DataChannel* dc) {
 		printf("\n========Got datachannel!=========\n");
 	}
   void* sock1;
@@ -68,12 +68,12 @@ int main() {
 	
 	sock1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback);
 	sock2 = newPeerConnection(rtc_conf1, onIceCallback, onDCCallback1);
-  CreateDataChannel(sock1, "testchannel", "");
   
   ParseOffer(sock1, ""); //trigger ICE
   ParseOffer(sock2, ""); // ""
 
-  sleep(1);
+
+  CreateDataChannel(sock1, "testchannel", "");
 
   int repeat = 0;
   while(repeat < 1) {
@@ -83,6 +83,7 @@ int main() {
     ParseOffer(sock2, offer);
     char* answer = GenerateAnswer(sock2);
     ParseOffer(sock1, answer);
+    
     //printf("\nOffer was: %s\n", offer);
     //printf("\nAnswer was: %s\n", answer);
     
