@@ -57,10 +57,9 @@ extern "C" {
   }
 
 
-  size_t length; // variable to reuse for storing length
-
   void* newPeerConnection(RTCConfiguration_C config_c, on_ice_cb ice_cb, on_dc_cb dc_cb) {
-    spdlog::set_level(spdlog::level::trace);
+    //spdlog::set_level(spdlog::level::trace);
+    //spdlog::set_pattern("*** [%H:%M:%S] %P %v ***");
     std::function<void(rtcdcpp::PeerConnection::IceCandidate)> onLocalIceCandidate = [ice_cb](rtcdcpp::PeerConnection::IceCandidate candidate)
     {
       IceCandidate_C ice_cand_c;
@@ -111,18 +110,17 @@ extern "C" {
       child_pc = new rtcdcpp::PeerConnection(config, onLocalIceCandidate, onDataChannel);
       void *child_context = zmq_ctx_new ();
       void *responder = zmq_socket (child_context, ZMQ_REP);
-      int rc1 = zmq_bind (responder, "ipc:///tmp/testpath");
+      char bind_path[30];
+      snprintf(bind_path, sizeof(bind_path), "ipc:///tmp/librtcdcpp%d", getpid());
+      int rc1 = zmq_bind (responder, bind_path);
 
-      //void *child_requester = zmq_socket (child_context,ZMQ_REQ);
-      //int rc1_c = zmq_bind (child_requester, "ipc:///tmp/childpath");
-      //
-      //assert (rc1 == 0);
-      //assert (rc1_c);
+      assert (rc1 == 0);
       bool alive = true;
       int command;
 
       while(alive) {
         zmq_recv (responder, &command, sizeof(command), 0);
+        //printf("\nReceived command %d in process %d\n", command, getpid());
         switch(command) {
           case DESTROY_PC:
             sendSignal(responder); // Respond.
@@ -133,6 +131,7 @@ extern "C" {
               // send dummy response on command socket. This means it can start sending arguments
               sendSignal(responder);
               // Wait for arg. (which is length)
+              size_t length;
               zmq_recv (responder, &length, sizeof(length), 0); // Wait for response
               // Ask for actual content in our response using dummy signal
               sendSignal(responder);
@@ -146,7 +145,7 @@ extern "C" {
             {
               char* offer;
               offer = _GenerateOffer(child_pc);
-              length = strlen(offer);
+              size_t length = strlen(offer);
               zmq_send (responder, &length, sizeof(length), 0); // Respond with length of generate offer
               signalSink(responder); // Wait for next dummy REQ to send the content
               zmq_send (responder, offer, length, 0); // Respond with content
@@ -156,7 +155,7 @@ extern "C" {
             {
               char* answer;
               answer = _GenerateAnswer(child_pc);
-              length = strlen(answer);
+              size_t length = strlen(answer);
               zmq_send (responder, &length, sizeof(length), 0);
               signalSink(responder);
               zmq_send (responder, answer, length, 0);
@@ -166,6 +165,7 @@ extern "C" {
             {
               bool ret_bool;
               sendSignal(responder); // Respond with dummy signal to get length
+              size_t length;
               zmq_recv (responder, &length, sizeof(length), 0);
               sendSignal(responder); // Respond with dummy signal to get content
               char candidate_sdp_arg[length];
@@ -199,11 +199,15 @@ extern "C" {
             zmq_recv(responder, &proto_arg_length, sizeof(proto_arg_length), 0);
             sendSignal(responder); // req label
             char label_arg[label_arg_length];
-            char proto_arg[proto_arg_length];
+            char proto_arg[proto_arg_length] = "";
             zmq_recv(responder, label_arg, label_arg_length, 0);
             sendSignal(responder); // req proto
             zmq_recv(responder, proto_arg, proto_arg_length, 0);
-            child_dc = _CreateDataChannel(child_pc, label_arg, proto_arg);
+            if (proto_arg_length == 0) {
+              child_dc = _CreateDataChannel(child_pc, label_arg, "");
+            } else {
+              child_dc = _CreateDataChannel(child_pc, label_arg, proto_arg);
+            }
             sendSignal(responder);
             }
             break;
@@ -259,7 +263,11 @@ extern "C" {
       }
     } else {
       // Parent
-      int rc2 = zmq_connect(requester, "ipc:///tmp/testpath");
+      char connect_path[30];
+      //sleep(1);
+      snprintf(connect_path, sizeof(connect_path), "ipc:///tmp/librtcdcpp%d", cpid);
+      //TODO: Clean up/close properly so that socket files don't linger in /tmp/
+      int rc2 = zmq_connect(requester, connect_path);
       //assert (rc2 == 0);
     }
     return requester;
@@ -296,6 +304,7 @@ extern "C" {
     int child_command = GENERATE_OFFER;
     zmq_send (socket, &child_command, sizeof(child_command), 0); // Send command request
     // Response will contain length of generated offer
+    size_t length;
     zmq_recv (socket, &length, sizeof(length), 0);
     sendSignal(socket); // dummy request for content
     char* recv_offer = (char*) malloc(length);
@@ -306,6 +315,7 @@ extern "C" {
   char* GenerateAnswer(void *socket) {
     int command = GENERATE_ANSWER;
     zmq_send (socket, &command, sizeof(command), 0);
+    size_t length;
     zmq_recv (socket, &length, sizeof(length), 0);
     sendSignal(socket);
     char *answer = (char *) malloc(length);
@@ -389,6 +399,7 @@ extern "C" {
   DataChannel* _CreateDataChannel(PeerConnection *pc, const char* label, const char* protocol) {
     std::string label_string (label);
     std::string protocol_string (protocol);
+    //TODO: label length doesn't seem to be right.
     if (protocol_string.size() > 0) {
       return pc->CreateDataChannel(label, protocol).get();
     } else {
