@@ -28,7 +28,7 @@ gchar* getlines() {
 /* end of custom multiline stdin scanning function */
 
 int main() {
-	/*
+	
   struct RTCIceServer_C rtc_ice;
 	rtc_ice.hostname = "stun3.l.google.com";
 	rtc_ice.port = 19302;
@@ -45,26 +45,25 @@ int main() {
 
 	struct DataChannel* dc;
 
-	void onDCCallback(dc) {
+	void onDCCallback(struct DataChannel* dc) {
 		printf("\n========Got datachannel!=========\n");
 	}
 
-	struct PeerConnection* pc;
-	pc = newPeerConnection(rtc_conf, onIceCallback, onDCCallback);
-	ParseOffer(pc, ""); // Leads to ICE candidates being saved in next Generate SDP call
-  CreateDataChannel(pc, "testchannel", ""); // This is the offer client, so it should create a datachannel object
-  char* offer = GenerateOffer(pc);
+	void* sock1;
+	sock1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback);
+	ParseOffer(sock1, ""); // Leads to ICE candidates being saved in next Generate SDP call
+  CreateDataChannel(sock1, "testchannel", ""); // This is the offer client, so it should create a datachannel object
+  char* offer = GenerateOffer(sock1);
   gchar* offer_e = g_base64_encode(offer, strlen(offer));
   printf("\nOffer:\n%s\n", offer_e);
   printf("\n\nEnter answer SDP:\n");
   gchar *received_sdp = getlines();
-  gchar *decoded_sdp_len;
+  gsize decoded_sdp_len;
   received_sdp = g_base64_decode(received_sdp, &decoded_sdp_len);
-  ParseOffer(pc, received_sdp);
+  ParseOffer(sock1, received_sdp);
   free(offer);
 	while(1) {
 		usleep(1);
 	}
-  */
 	return 0;
 }
