@@ -60,35 +60,32 @@ int main() {
 	void onDCCallback(dc) {
 		printf("\n========Got datachannel!=========\n");
 	}
-
-  struct f_descriptors fdes1, fdes2;
+  void onDCCallback1(dc) {
+		printf("\n========Got datachannel!=========\n");
+	}
+  void* sock1;
+  void* sock2;
 	
-	fdes1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback);
-	fdes2 = newPeerConnection(rtc_conf1, onIceCallback, onDCCallback);
-  //CreateDataChannel(pc1, "testchannel", "");
+	sock1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback);
+	sock2 = newPeerConnection(rtc_conf1, onIceCallback, onDCCallback1);
+  CreateDataChannel(sock1, "testchannel", "");
+  
+  ParseOffer(sock1, ""); //trigger ICE
+  ParseOffer(sock2, ""); // ""
+
+  sleep(1);
 
   int repeat = 0;
   while(repeat < 1) {
   printf("\n========================\n");
   
-  //int pipe_size = fcntl(fdes1.first, F_GETPIPE_SZ);
-  //printf("\nPipe size of fdes1 read end:%d\n", pipe_size);
-  
-  usleep(1000000);
-    char* offer = GenerateOffer(fdes1);
-    //gchar* offer_e = g_base64_encode(offer, strlen(offer));
-    //printf("\nOffer:\n%s\n", offer_e);
-    //printf("\n\nEnter answer SDP:\n");
-    //gchar *received_sdp = getlines();
-    //gchar *decoded_sdp_len;
-    //received_sdp = g_base64_decode(received_sdp, &decoded_sdp_len);
-    //ParseOffer(pc, received_sdp);
+    char* offer = GenerateOffer(sock1);
+    ParseOffer(sock2, offer);
+    char* answer = GenerateAnswer(sock2);
+    ParseOffer(sock1, answer);
+    //printf("\nOffer was: %s\n", offer);
+    //printf("\nAnswer was: %s\n", answer);
     
-    //ParseOffer(pc2, offer);
-    //char* answer = GenerateAnswer(pc2);
-    //ParseOffer(pc1, answer);
-    
-    printf("\nOffer: %s", offer);
     //free(offer);
     //free(answer);
     repeat += 1;
