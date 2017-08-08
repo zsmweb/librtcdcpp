@@ -40,20 +40,19 @@ IceCandidate_C* newIceCandidate(const char* candidate, const char* sdpMid, int s
 
 typedef void (*on_ice_cb)(IceCandidate_C ice_c);
 typedef void (*on_dc_cb)(DataChannel *dc);
-struct f_descriptors {
-      int first;
-      int second;
-};
-//typedef struct f_descriptors f_descriptors;
-struct f_descriptors newPeerConnection(struct RTCConfiguration_C config, on_ice_cb ice_cb, on_dc_cb dc_cb);
 
-void destroyPeerConnection(pid_t cpid);
-void ParseOffer(pid_t cpid, const char* sdp);
-char* GenerateOffer(struct f_descriptors cpid);
-char* GenerateAnswer(struct f_descriptors cpid);
-bool SetRemoteIceCandidate(pid_t cpid, const char* candidate_sdp); 
-bool SetRemoteIceCandidates(pid_t cpid, const GArray* candidate_sdps);
-DataChannel *CreateDataChannel(pid_t cpid, const char* label, const char* protocol);
+void* newPeerConnection(struct RTCConfiguration_C config, on_ice_cb ice_cb, on_dc_cb dc_cb);
+
+void sendSignal(void* zmqsock);
+void signalSink(void* zmqsock);
+
+void destroyPeerConnection(void* socket);
+void ParseOffer(void* socket, const char* sdp);
+char* GenerateOffer(void* socket);
+char* GenerateAnswer(void* socket);
+bool SetRemoteIceCandidate(void* socket, const char* candidate_sdp); 
+bool SetRemoteIceCandidates(void* socket, const GArray* candidate_sdps);
+void CreateDataChannel(void* socket, const char* label, const char* protocol);
 // DataChannel member functions
 // TODO 
 u_int16_t getDataChannelStreamID(DataChannel *dc);
