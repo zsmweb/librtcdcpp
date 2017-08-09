@@ -2,66 +2,67 @@ from libpyrtcdcpp import ffi, lib
 from typing import List, Callable
 
 class DataChannel():
-    def __init__(self, dc):
+    def __init__(self, dc, pc):
         self.dc = dc
+        self.pc = pc
 
     def SendString(self, msg:str):
         if len(msg) > 0:
             msg = ffi.new("char[]", bytes(msg, 'utf-8'))
-            lib.SendString(self.dc, msg)
+            lib.SendString(self.pc, self.dc, msg)
 
     def SendBinary(self, msg:bytes):
         msg = ffi.new("u_int_8_t", msg) 
-        lib.SendBinary(self.dc, msg, len(msg))
+        lib.SendBinary(self.pc, self.dc, msg, len(msg))
 
     def SetOnOpen(self, on_open):
         @ffi.def_extern()
         def onOpened():
             if on_open is not None:
                 on_open()
-        lib.SetOnOpen(self.dc, lib.onOpen)
+        lib.SetOnOpen(self.pc, self.dc, lib.onOpen)
 
     def SetOnStringMsgCallback(self, on_string):
         @ffi.def_extern()
         def onStringMsg(msg):
             if on_string is not None:
                 on_string(ffi.string(msg).decode('utf-8'))
-        lib.SetOnStringMsgCallback(self.dc, lib.onStringMsg)
+        lib.SetOnStringMsgCallback(self.pc, self.dc, lib.onStringMsg)
 
     def SetOnBinaryMsgCallback(self, on_binary):
         @ffi.def_extern()
         def onBinaryMsg(msg):
             if on_binary is not None:
                 on_binary(msg) #
-        lib.SetOnBinaryMsgCallback(self.dc, lib.onBinaryMsg)
+        lib.SetOnBinaryMsgCallback(self.pc, self.dc, lib.onBinaryMsg)
 
     def SetOnClosedCallback(self, on_closed):
         @ffi.def_extern()
         def onClosed():
             if on_closed is not None:
                 on_closed()
-        lib.SetOnClosedCallback(self.dc, lib.onClosed)
+                lib.SetOnClosedCallback(self.pc, self.dc, lib.onClosed)
 
     def SetOnErrorCallback(self, on_error):
         @ffi.def_extern()
         def onError(description):
             if on_error is not None:
                 on_error(ffi.string(description).decode('utf-8'))
-        lib.SetOnErrorCallback(self.dc, lib.onError)
+        lib.SetOnErrorCallback(self.pc, self.dc, lib.onError)
 
     def Close(self):
-        lib.closeDataChannel(self.dc);
+        lib.closeDataChannel(self.pc, self.dc);
 
     def getStreamID(self) -> int:
-        return lib.getDataChannelStreamID(self.dc)
+        return lib.getDataChannelStreamID(self.pc, self.dc)
 
     #u_int8_t getDataChannelType(DataChannel *dc); # TODO
 
     def getLabel(self) -> str:
-        return ffi.string(lib.getDataChannelLabel(self.dc)).decode('utf-8')
+        return ffi.string(lib.getDataChannelLabel(self.pc, self.dc)).decode('utf-8')
 
     def getProtocol(self) -> str:
-        return ffi.string(lib.getDataChannelProtocol(self.dc)).decode('utf-8')
+        return ffi.string(lib.getDataChannelProtocol(self.pc, self.dc)).decode('utf-8')
 
 # This can be a dict instead of a class
 class RTCConf():
@@ -125,11 +126,11 @@ class PeerConnection():
         rtc_conf_s.ice_ufrag = ffi.NULL if rtc_conf._ice_ufrag is None else rtc_conf._ice_ufrag
         rtc_conf_s.ice_pwd = ffi.NULL if rtc_conf._ice_pwd is None else rtc_conf._ice_pwd
         rtc_conf_s.ice_servers = garray
-
+        self.pc = None #!
         @ffi.def_extern()
         def onDCCallback(dc):
             if onDCCallback_p is not None:
-                argument = DataChannel(dc)
+                argument = DataChannel(dc, self.pc)
                 onDCCallback_p(argument)
         
         @ffi.def_extern()
@@ -156,7 +157,7 @@ class PeerConnection():
         protocol = ffi.new("char[]", bytes('', 'utf-8')) if protocol is None else ffi.new("char[]", bytes(label, 'utf-8'))
         label = ffi.new("char[]", bytes(label, 'utf-8'))
         retval = lib.CreateDataChannel(self.pc, label, protocol)
-        dc = DataChannel(retval)
+        dc = DataChannel(retval, self.pc)
         return dc
     
     def SetRemoteIceCandidate(self, candidate:str) -> bool:
