@@ -211,51 +211,111 @@ extern "C" {
             sendSignal(responder);
             }
             break;
+          case CLOSE_DC:
+            _closeDataChannel(child_dc);
+            sendSignal(responder);
+            break;
           case GET_DC_SID:
             u_int16_t sid;
-            //sid = _getDataChannelStreamID(child_dc);
+            sid = _getDataChannelStreamID(child_dc);
+            zmq_send(responder, &sid, sizeof(sid), 0);
             break;
           case GET_DC_TYPE:
-            u_int8_t type;
-            //type = _getDataChannelType(child_dc);
+            u_int8_t dc_type;
+            dc_type = _getDataChannelType(child_dc);
+            zmq_send(responder, &dc_type, sizeof(dc_type), 0);
             break;
           case GET_DC_LABEL:
+            {
             const char* chan_label;
-            //chan_label = _getDataChannelLabel(child_dc);
+            chan_label = _getDataChannelLabel(child_dc);
+            size_t label_len = strlen(chan_label);
+            zmq_send (responder, &label_len, sizeof(label_len), 0);
+            signalSink(responder);
+            zmq_send (responder, chan_label, label_len, 0);
+            }
             break;
           case GET_DC_PROTO:
+            {
             const char* chan_proto;
-            //chan_proto = _getDataChannelProtocol(child_dc);
+            chan_proto = _getDataChannelProtocol(child_dc);
+            size_t proto_len = strlen(chan_proto);
+            zmq_send (responder, &proto_len, sizeof(proto_len), 0);
+            signalSink(responder);
+            zmq_send (responder, chan_proto, proto_len, 0);
+            }
             break;
           case SEND_STRING:
-            // !
-            //ret_bool = _SendString(child_dc, args_char);
+            {
+            sendSignal(responder); //req length
+            size_t send_len;
+            zmq_recv (responder, &send_len, sizeof(send_len), 0);
+            char send_str[send_len];
+            sendSignal(responder); //req content
+            zmq_recv (responder, send_str, send_len, 0);
+            bool ret_bool = _SendString(child_dc, send_str);
+            zmq_send (responder, &ret_bool, sizeof(bool), 0);
+            }
             break;
           case SEND_BINARY:
+            // !
+            {
             u_int8_t len;
-            u_int8_t *msg_8t;
-            //ret_bool = _SendBinary(child_dc, msg_8t, len);
+            sendSignal(responder); //req length
+            zmq_recv (responder, &len, sizeof(len), 0);
+            u_int8_t send_stuff[len];
+            sendSignal(responder); //req content
+            zmq_recv (responder, send_stuff, len, 0);
+            bool ret_bool = _SendBinary(child_dc, send_stuff, len);
+            zmq_send (responder, &ret_bool, sizeof(bool), 0);
+            }
             break;
           case SET_ON_OPEN_CB:
             //Get onOpenCB function pointer
-            open_cb open_callback;
-            //_SetOnOpen(child_dc, open_callback);
+            {
+            sendSignal(responder);
+            // alloc?
+            open_cb open_callback = (open_cb) malloc(sizeof(open_cb));
+            zmq_recv (responder, &open_callback, sizeof(open_cb), 0);
+            _SetOnOpen(child_dc, open_callback);
+            sendSignal(responder);
+            }
             break;
           case SET_ON_STRING_MSG_CB:
-            on_string_msg string_callback;
-            //_SetOnStringMsgCallback(child_dc, string_callback);
+            {
+            sendSignal(responder);
+            on_string_msg string_callback = (on_string_msg) malloc(sizeof(on_string_msg));
+            zmq_recv (responder, &string_callback, sizeof(on_string_msg), 0);
+            _SetOnStringMsgCallback(child_dc, string_callback);
+            sendSignal(responder);
+            }
             break;
           case SET_ON_BINARY_MSG_CB:
-            on_binary_msg binary_callback;
-            //_SetOnBinaryMsgCallback(child_dc, binary_callback);
+            {
+            sendSignal(responder);
+            on_binary_msg binary_callback = (on_binary_msg) malloc(sizeof(on_binary_msg));
+            zmq_recv (responder, &binary_callback, sizeof(on_binary_msg), 0);
+            _SetOnBinaryMsgCallback(child_dc, binary_callback);
+            sendSignal(responder);
+            }
             break;
           case SET_ON_ERROR_CB:
-            on_error error_callback;
-            //_SetOnErrorCallback(child_dc, error_callback);
+            {
+            sendSignal(responder);
+            on_error error_callback = (on_error) malloc(sizeof(on_error));
+            zmq_recv (responder, &error_callback, sizeof(on_error), 0);
+            _SetOnErrorCallback(child_dc, error_callback);
+            sendSignal(responder);
+            }
             break;
           case SET_ON_CLOSED_CB:
-            on_close close_callback;
-            //_SetOnClosedCallback(child_dc, close_callback);
+            {
+            sendSignal(responder);
+            on_close close_callback = (on_close) malloc(sizeof(close_callback));
+            zmq_recv (responder, &close_callback, sizeof(on_close), 0);
+            _SetOnClosedCallback(child_dc, close_callback);
+            sendSignal(responder);
+            }
             break;
           default:
             break;
@@ -365,6 +425,122 @@ extern "C" {
     zmq_send (socket, protocol, protocol_length, 0);
     signalSink(socket);
   };
+  
+  void closeDataChannel(void* socket, DataChannel* dc) {
+    int command = CLOSE_DC;
+    zmq_send (socket, &command, sizeof(command), 0);
+    signalSink(socket);
+  }
+
+  u_int16_t getDataChannelStreamID(void* socket, DataChannel* dc) {
+    int command = GET_DC_SID;
+    u_int16_t sid;
+    zmq_send (socket, &command, sizeof(command), 0);
+    zmq_recv (socket, &sid, sizeof(sid), 0);
+    return sid;
+  }
+
+
+  u_int8_t getDataChannelType(void* socket, DataChannel *dc) {
+    u_int8_t dc_type;
+    int command = GET_DC_TYPE;
+    zmq_send (socket, &command, sizeof(command), 0);
+    zmq_recv (socket, &dc_type, sizeof(dc_type), 0);
+    return dc_type;
+  }
+
+  const char* getDataChannelLabel(void* socket, DataChannel *dc) {
+    int command = GET_DC_LABEL;
+    zmq_send (socket, &command, sizeof(command), 0);
+    size_t label_len;
+    zmq_recv (socket, &label_len, sizeof(label_len), 0);
+    sendSignal(socket);
+    char label[label_len];
+    zmq_recv (socket, label, label_len, 0);
+    char* label_ptr = label;
+    return label_ptr;
+  }
+
+  const char* getDataChannelProtocol(void *socket, DataChannel *dc) {
+    int command = GET_DC_PROTO;
+    zmq_send (socket, &command, sizeof(command), 0);
+    size_t proto_len;
+    zmq_recv (socket, &proto_len, sizeof(proto_len), 0);
+    sendSignal(socket);
+    char proto[proto_len];
+    zmq_recv (socket, proto, proto_len, 0);
+    char* proto_ptr = proto;
+    return proto_ptr;
+  }
+
+
+  bool SendString(void* socket, DataChannel *dc, const char* msg) {
+    int command = SEND_STRING;
+    zmq_send (socket, &command, sizeof(command), 0);
+    signalSink(socket);
+    size_t send_len = strlen(msg);
+    // Send length of our msg
+    zmq_send (socket, &send_len, sizeof(send_len), 0);
+    signalSink(socket);
+    zmq_send (socket, msg, send_len, 0);
+    bool ret_val;
+    zmq_recv (socket, &ret_val, sizeof(ret_val), 0);
+    return ret_val;
+  }
+  
+  bool SendBinary(void* socket, DataChannel *dc, const u_int8_t *msg, int len) {
+    int command = SEND_BINARY;
+    zmq_send (socket, &command, sizeof(command), 0);
+    signalSink(socket);
+    // Send length of our msg
+    zmq_send (socket, &len, sizeof(len), 0);
+    signalSink(socket);
+    zmq_send (socket, msg, len, 0);
+    bool ret_val;
+    zmq_recv (socket, &ret_val, sizeof(ret_val), 0);
+    return ret_val;
+  }
+
+
+  void SetOnOpen(void *socket, DataChannel *dc, open_cb on_open_cb) {
+    int command = SET_ON_OPEN_CB;
+    zmq_send (socket, &command, sizeof(command), 0);
+    signalSink(socket);
+    zmq_send (socket, &on_open_cb, sizeof(open_cb), 0);
+    signalSink(socket);
+  }
+
+  void SetOnStringMsgCallback(void *socket, DataChannel *dc, on_string_msg recv_str_cb) {
+    int command = SET_ON_STRING_MSG_CB;
+    zmq_send (socket, &command, sizeof(command), 0);
+    signalSink(socket);
+    zmq_send (socket, &recv_str_cb, sizeof(on_string_msg), 0);
+    signalSink(socket);
+  }
+
+  void SetOnBinaryMsgCallback(void *socket, DataChannel *dc, on_binary_msg msg_binary_cb) {
+    int command = SET_ON_BINARY_MSG_CB;
+    zmq_send (socket, &command, sizeof(command), 0);
+    signalSink(socket);
+    zmq_send (socket, &msg_binary_cb, sizeof(on_binary_msg), 0);
+    signalSink(socket);
+  }
+
+  void SetOnErrorCallback(void *socket, DataChannel *dc, on_error error_cb) {
+    int command = SET_ON_ERROR_CB;
+    zmq_send (socket, &command, sizeof(command), 0);
+    signalSink(socket);
+    zmq_send (socket, &error_cb, sizeof(on_error), 0);
+    signalSink(socket);
+  }
+
+  void SetOnClosedCallback(void *socket, DataChannel *dc, on_close close_cb) {
+    int command = SET_ON_CLOSED_CB;
+    zmq_send (socket, &command, sizeof(command), 0);
+    signalSink(socket);
+    zmq_send (socket, &close_cb, sizeof(on_close), 0);
+    signalSink(socket);
+  }
 
   char* _GenerateOffer(PeerConnection *pc) {
     std::string ret_val;

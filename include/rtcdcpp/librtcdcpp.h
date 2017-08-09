@@ -55,13 +55,13 @@ bool SetRemoteIceCandidates(void* socket, const GArray* candidate_sdps);
 void CreateDataChannel(void* socket, const char* label, const char* protocol);
 // DataChannel member functions
 // TODO 
-u_int16_t getDataChannelStreamID(DataChannel *dc);
-u_int8_t getDataChannelType(DataChannel *dc);
-const char* getDataChannelLabel(DataChannel *dc);
-const char* getDataChannelProtocol(DataChannel *dc);
-bool SendString(DataChannel *dc, const char* msg);
-bool SendBinary(DataChannel *dc, const u_int8_t *msg, int len);
-void closeDataChannel(DataChannel *dc);
+u_int16_t getDataChannelStreamID(void* socket, DataChannel *dc);
+u_int8_t getDataChannelType(void* socket, DataChannel *dc);
+const char* getDataChannelLabel(void* socket, DataChannel *dc);
+const char* getDataChannelProtocol(void* socket, DataChannel *dc);
+bool SendString(void* socket, DataChannel *dc, const char* msg);
+bool SendBinary(void* socket, DataChannel *dc, const u_int8_t *msg, int len);
+void closeDataChannel(void* socket, DataChannel *dc);
 
 
 void _destroyPeerConnection(PeerConnection* pc);
@@ -80,15 +80,6 @@ bool _SendString(DataChannel *dc, const char* msg);
 bool _SendBinary(DataChannel *dc, u_int8_t *msg, int len);
 void _closeDataChannel(DataChannel *dc);
 
-/*
-void _SetOnOpen(DataChannel *dc, open_cb on_open_cb);
-void _SetOnStringMsgCallback(DataChannel *dc, on_string_msg recv_str_cb);
-void _SetOnBinaryMsgCallback(DataChannel *dc, on_binary_msg msg_binary_cb);
-void _SetOnClosedCallback(DataChannel *dc, on_close close_cb);
-void _SetOnErrorCallback(DataChannel *dc, on_error error_cb);
-*/
-
-
 //DataChannel Callback related methods
 typedef void (*open_cb)(void);
 typedef void (*on_string_msg)(const char* message);
@@ -96,12 +87,27 @@ typedef void (*on_binary_msg)(void* message);
 typedef void (*on_close)(void);
 typedef void (*on_error)(const char* description);
 
+void SetOnOpen(void *socket, DataChannel *dc, open_cb on_open_cb);
+void SetOnStringMsgCallback(void *socket, DataChannel *dc, on_string_msg recv_str_cb);
+void SetOnBinaryMsgCallback(void *socket, DataChannel *dc, on_binary_msg msg_binary_cb);
+void SetOnClosedCallback(void *socket, DataChannel *dc, on_close close_cb);
+void SetOnErrorCallback(void *socket, DataChannel *dc, on_error error_cb);
+
+void _SetOnOpen(DataChannel *dc, open_cb on_open_cb);
+void _SetOnStringMsgCallback(DataChannel *dc, on_string_msg recv_str_cb);
+void _SetOnBinaryMsgCallback(DataChannel *dc, on_binary_msg msg_binary_cb);
+void _SetOnClosedCallback(DataChannel *dc, on_close close_cb);
+void _SetOnErrorCallback(DataChannel *dc, on_error error_cb);
+
+/*
 //DataChannel Callback setters
 void SetOnOpen(DataChannel *dc, open_cb on_open_cb);
 void SetOnStringMsgCallback(DataChannel *dc, on_string_msg recv_str_cb);
 void SetOnBinaryMsgCallback(DataChannel *dc, on_binary_msg msg_binary_cb);
 void SetOnClosedCallback(DataChannel *dc, on_close close_cb);
 void SetOnErrorCallback(DataChannel *dc, on_error error_cb);
+DELETE this
+*/
 #ifdef __cplusplus
 }
 #endif
