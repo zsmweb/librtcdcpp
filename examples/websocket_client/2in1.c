@@ -4,7 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <pthread.h>
+#include <time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+extern bool running;
 #include <fcntl.h>
 //#include "/usr/include/linux/fcntl.h"
 
@@ -28,7 +32,95 @@ gchar* getlines() {
 	return lines;
 }
 
+void stress1(void *socket) {
+    int i = 1;
+    int count = 0;
+    int max_count = 2000;
+    int bytecount1 = 0, bytecount2 = 0;
+    
+    int j;
+    j = 16; // size in kilobytes
+    i = j * 1024;
+    //std::vector<CpuTimes> cpuvec;
+    //auto cpuvec_val = cpu_times(false);
+    //cpuvec.push_back(*cpuvec_val);
+    printf("\n===Testing fixed payloads of %d kB %d times===\n", j, max_count);
+    time_t start;
+    time(&start);
+    char test_str[i];
+    for (int str_p = 0; str_p < i; str_p++) {
+      test_str[str_p] = 'A';
+    }
+    test_str[i] = '\0';
+    while (count < max_count) {
+      count += 1;
+      if (SendString(socket, NULL, test_str) == 0) {
+        printf("\n BROKE at count: %d\n", count);
+        count--;
+        break;
+      }
+      bytecount1 += i;
+    }
+    //cpuvec_val = cpu_times(true);
+    //cpuvec.push_back(*cpuvec_val);
+    time_t end;
+    time(&end);
+    int elapsed_seconds;
+    elapsed_seconds = end - start;
+    //elapsed_seconds = difftime(end, start);
+    //CpuTimes ct1 = cpuvec.front();
+    //double *cpures = cpu_util_percent(false, &ct1);
+    //std::cout << "CPU util: " << std::fixed << std::setprecision(1) << *cpures << "%\n";
+    //std::cout << bytecount1 << " bytes sent.\n";
+
+    int inc_stop;
+    inc_stop = count;
+
+    i = 1; 
+    count = 0;
+    int wait_1, close_wait;
+    wait_1 = 4;
+    
+    //std::cout << "\nWaiting " << wait_1 << " seconds.\n";
+   // usleep(wait_1 * 1000000);
+    /*
+    std::cout << "===Testing throughput using single char spam===\n";
+    while (running && count < 419) {
+      count += 1;
+      std::string test_str((size_t) i, 'A');
+      try {
+        //usleep(300000);
+        if (count == 419) { gdbbreak = 1; }
+        dc->SendString(test_str);
+      } catch(std::runtime_error& e) {
+        std::cout << "BROKE at count: " << count << "\n";
+        count--;
+        break;
+      }
+    }
+    */
+    //printf("\n%d bytes sent. \n\n", count);
+    printf("Incremental throughput stops at: %d\n", inc_stop);
+    printf("Single char spam stops at count: %d\n", count);
+    printf("TOTAL successful send_string calls: %d\n", inc_stop + count);
+    printf("TOTAL data sent: %d MB\n", bytecount1 / (1024 * 1024));
+    printf("TOTAL time taken: %d seconds\n", elapsed_seconds);
+    printf("Data rate: %d MB/s\n", (bytecount1 / elapsed_seconds) / (1024 * 1024));
+    close_wait = 3;
+    printf("\nWaiting %d seconds before closing DC.\n", close_wait);
+    usleep(close_wait * 1000000); //5s
+    closeDataChannel(socket, NULL);
+}
+
+void run_stress_test(void* socket) {
+    printf("\nRunning stress tests\n");
+    pthread_t t1;
+    pthread_create(&t1, NULL, (void *)&stress1, socket);
+    pthread_detach(t1);
+}
+
 int main() {
+  bool running = false;
 
 	struct RTCIceServer_C rtc_ice;
 	rtc_ice.hostname = "stun3.l.google.com";
@@ -86,7 +178,12 @@ int main() {
     
     //printf("\nOffer was: %s\n", offer);
     //printf("\nAnswer was: %s\n", answer);
-    
+    sleep(1); // manual wait to test
+    SetOnStringMsgCallback(sock1, NULL, onMsgOne);
+    SendString(sock2, NULL, "test");
+    printf("\nsend string ok\n");
+    //run_stress_test(sock1);
+
     //free(offer);
     //free(answer);
     repeat += 1;
@@ -94,8 +191,20 @@ int main() {
       //printf("\n Let's do that exact dance again to get ICE candidates exchanged the non trickle way\n");
     }
   }
-	while(1) {
-		usleep(1);
-	}
+
+  
+
+	/*while(1) {*/
+    /*if (running == true) {*/
+      
+    /*}*/
+		/*sleep(1);*/
+	/*}*/
+  int status1; int status2;
+  pid_t p1, p2;
+  p1 = wait(&status1);
+  printf("\nProcess %d died\n", p1);
+  p2 = wait(&status2);
+  printf("\nProcess %d died\n", p2);
 	return 0;
 }
