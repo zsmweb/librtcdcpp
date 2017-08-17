@@ -71,14 +71,6 @@ extern "C" {
       ice_cb(ice_cand_c);
     };
 
-    //This is not necessarily needed for parent process, move it to child/forked context?
-    DataChannel* child_dc;
-    std::function<void(std::shared_ptr<DataChannel> channel, void* requester)> onDataChannel = [dc_cb, &requester, &child_dc](std::shared_ptr<DataChannel> channel, void* requester) {
-      child_dc = (DataChannel *) channel.get();
-      dc_cb((DataChannel *) channel.get(), requester); // requester invalid (opaque ptr in pprocess), deprecate!
-    };
-    //
-
     rtcdcpp::RTCConfiguration config;
     for(int i = 0; i < config_c.ice_servers->len; i++) {
       config.ice_servers.emplace_back(rtcdcpp::RTCIceServer{"stun3.l.google.com", 19302});
@@ -103,6 +95,7 @@ extern "C" {
        config.certificates.emplace_back(&rtc_cert);
        }
     */ 
+
     pid_t cpid = fork();
     void *context = zmq_ctx_new ();
     void *requester = zmq_socket (context, ZMQ_REQ);
@@ -111,6 +104,13 @@ extern "C" {
 
     if (cpid == 0) {
       //child
+
+      DataChannel* child_dc;
+      std::function<void(std::shared_ptr<DataChannel> channel, void* requester)> onDataChannel = [dc_cb, &requester, &child_dc](std::shared_ptr<DataChannel> channel, void* requester) {
+        child_dc = (DataChannel *) channel.get();
+        dc_cb((DataChannel *) channel.get(), requester); // requester invalid (opaque ptr in pprocess), deprecate!
+      };
+
       PeerConnection* child_pc;
       child_pc = new rtcdcpp::PeerConnection(config, onLocalIceCandidate, onDataChannel, requester); //Passing requester here is invalid
       void *child_context = zmq_ctx_new ();
