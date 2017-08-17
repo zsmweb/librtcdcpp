@@ -149,21 +149,19 @@ int main() {
 
 	struct DataChannel* dc;
 
-	void onDCCallback(struct DataChannel* dc) {
-		printf("\n========Got datachannel!=========\n");
+	void onDCCallback(struct DataChannel* dc, void *socket) {
+		printf("\n=sock1===Got datachannel!=======\n", getpid());
 	}
-  void onDCCallback1(struct DataChannel* dc) {
-		printf("\n========Got datachannel!=========\n");
+  void onDCCallback1(struct DataChannel* dc, void* socket) {
+		printf("\n=sock2===Got datachannel!==%d=====\n", getpid());
 	}
   void* sock1;
   void* sock2;
 	
 	sock1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback);
 	sock2 = newPeerConnection(rtc_conf1, onIceCallback, onDCCallback1);
-  
   ParseOffer(sock1, ""); //trigger ICE
   ParseOffer(sock2, ""); // ""
-
 
   CreateDataChannel(sock1, "testchannel", "");
 
@@ -176,35 +174,9 @@ int main() {
     char* answer = GenerateAnswer(sock2);
     ParseOffer(sock1, answer);
     
-    //printf("\nOffer was: %s\n", offer);
-    //printf("\nAnswer was: %s\n", answer);
-    sleep(1); // manual wait to test
-    SetOnStringMsgCallback(sock1, NULL, onMsgOne);
-    SendString(sock2, NULL, "test");
-    printf("\nsend string ok\n");
-    //run_stress_test(sock1);
-
-    //free(offer);
-    //free(answer);
-    repeat += 1;
-    if (repeat == 1) {
-      //printf("\n Let's do that exact dance again to get ICE candidates exchanged the non trickle way\n");
-    }
+    sleep(1);
+    run_stress_test(sock1);
   }
-
-  
-
-	/*while(1) {*/
-    /*if (running == true) {*/
-      
-    /*}*/
-		/*sleep(1);*/
-	/*}*/
-  int status1; int status2;
-  pid_t p1, p2;
-  p1 = wait(&status1);
-  printf("\nProcess %d died\n", p1);
-  p2 = wait(&status2);
-  printf("\nProcess %d died\n", p2);
+  processWait();
 	return 0;
 }
