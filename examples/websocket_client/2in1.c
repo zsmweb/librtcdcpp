@@ -11,7 +11,8 @@
 extern bool running;
 #include <fcntl.h>
 //#include "/usr/include/linux/fcntl.h"
-
+// Set callbacks insie onChannel and use the underscore prefix APIs
+// TODO: Remove the _ from prefix APIs and deprecate the other ones 
 gchar* getlines() {
 	size_t len = 0, linesize, inc_size;
 	gchar *line, *lines=NULL;
@@ -32,7 +33,7 @@ gchar* getlines() {
 	return lines;
 }
 
-void stress1(void *socket) {
+void stress1(DataChannel *dc) {
     int i = 1;
     int count = 0;
     int max_count = 2000;
@@ -54,7 +55,7 @@ void stress1(void *socket) {
     test_str[i] = '\0';
     while (count < max_count) {
       count += 1;
-      if (SendString(socket, NULL, test_str) == 0) {
+      if (_SendString(dc, test_str) == 0) {
         printf("\n BROKE at count: %d\n", count);
         count--;
         break;
@@ -109,13 +110,13 @@ void stress1(void *socket) {
     close_wait = 3;
     printf("\nWaiting %d seconds before closing DC.\n", close_wait);
     usleep(close_wait * 1000000); //5s
-    closeDataChannel(socket, NULL);
+    _closeDataChannel(dc);
 }
 
-void run_stress_test(void* socket) {
+void run_stress_test(DataChannel* dc) {
     printf("\nRunning stress tests\n");
     pthread_t t1;
-    pthread_create(&t1, NULL, (void *)&stress1, socket);
+    pthread_create(&t1, NULL, (void *)&stress1, dc);
     pthread_detach(t1);
 }
 
@@ -153,7 +154,8 @@ int main() {
 		printf("\n=sock1===Got datachannel!=======\n", getpid());
 	}
   void onDCCallback1(struct DataChannel* dc, void* socket) {
-		printf("\n=sock2===Got datachannel!==%d=====\n", getpid());
+		printf("\n=sock2===Got datachannel!=======\n", getpid());
+    run_stress_test(dc); // spawns a thread as nothing should block in callbacks
 	}
   void* sock1;
   void* sock2;
@@ -173,9 +175,7 @@ int main() {
     ParseOffer(sock2, offer);
     char* answer = GenerateAnswer(sock2);
     ParseOffer(sock1, answer);
-    
-    sleep(1);
-    run_stress_test(sock1);
+    break;
   }
   processWait();
 	return 0;

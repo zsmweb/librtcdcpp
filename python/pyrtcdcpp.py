@@ -9,60 +9,60 @@ class DataChannel():
     def SendString(self, msg:str):
         if len(msg) > 0:
             msg = ffi.new("char[]", bytes(msg, 'utf-8'))
-            lib.SendString(self.pc, self.dc, msg)
+            lib._SendString(self.dc, msg)
 
     def SendBinary(self, msg:bytes):
         msg = ffi.new("u_int_8_t", msg) 
-        lib.SendBinary(self.pc, self.dc, msg, len(msg))
+        lib._SendBinary(self.dc, msg, len(msg))
 
     def SetOnOpen(self, on_open):
         @ffi.def_extern()
         def onOpened():
             if on_open is not None:
                 on_open()
-        lib.SetOnOpen(self.pc, self.dc, lib.onOpen)
+        lib._SetOnOpen(self.dc, lib.onOpen)
 
     def SetOnStringMsgCallback(self, on_string):
         @ffi.def_extern()
         def onStringMsg(msg):
             if on_string is not None:
                 on_string(ffi.string(msg).decode('utf-8'))
-        lib.SetOnStringMsgCallback(self.pc, self.dc, lib.onStringMsg)
+        lib._SetOnStringMsgCallback(self.dc, lib.onStringMsg)
 
     def SetOnBinaryMsgCallback(self, on_binary):
         @ffi.def_extern()
         def onBinaryMsg(msg):
             if on_binary is not None:
                 on_binary(msg) #
-        lib.SetOnBinaryMsgCallback(self.pc, self.dc, lib.onBinaryMsg)
+        lib._SetOnBinaryMsgCallback(self.dc, lib.onBinaryMsg)
 
     def SetOnClosedCallback(self, on_closed):
         @ffi.def_extern()
         def onClosed():
             if on_closed is not None:
                 on_closed()
-                lib.SetOnClosedCallback(self.pc, self.dc, lib.onClosed)
+        lib._SetOnClosedCallback(self.dc, lib.onClosed)
 
     def SetOnErrorCallback(self, on_error):
         @ffi.def_extern()
         def onError(description):
             if on_error is not None:
                 on_error(ffi.string(description).decode('utf-8'))
-        lib.SetOnErrorCallback(self.pc, self.dc, lib.onError)
+        lib._SetOnErrorCallback(self.dc, lib.onError)
 
     def Close(self):
-        lib.closeDataChannel(self.pc, self.dc);
+        lib._closeDataChannel(self.dc);
 
     def getStreamID(self) -> int:
-        return lib.getDataChannelStreamID(self.pc, self.dc)
+        return lib._getDataChannelStreamID(self.dc)
 
     #u_int8_t getDataChannelType(DataChannel *dc); # TODO
 
     def getLabel(self) -> str:
-        return ffi.string(lib.getDataChannelLabel(self.pc, self.dc)).decode('utf-8')
+        return ffi.string(lib._getDataChannelLabel(self.dc)).decode('utf-8')
 
     def getProtocol(self) -> str:
-        return ffi.string(lib.getDataChannelProtocol(self.pc, self.dc)).decode('utf-8')
+        return ffi.string(lib._getDataChannelProtocol(self.dc)).decode('utf-8')
 
 # This can be a dict instead of a class
 class RTCConf():
@@ -98,7 +98,7 @@ class PeerConnection():
         pass
 
     # Private methods
-    def _onChannel(self, channel):
+    def _onChannel(self, channel, pc):
         # Set our private onMessage and onClose callbacks
         channel.SetOnClosedCallback(self.onClose)
         channel.SetOnStringMsgCallback(self.onMessage)
