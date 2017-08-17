@@ -256,7 +256,8 @@ extern "C" {
             size_t send_len;
             zmq_recv (responder, &send_len, sizeof(send_len), 0);
             char send_str[send_len];
-            sendSignal(responder); //req content
+            send_str[send_len] = '\0';
+            sendSignal(responder);
             zmq_recv (responder, send_str, send_len, 0);
             bool ret_bool = _SendString(child_dc, send_str);
             zmq_send (responder, &ret_bool, sizeof(bool), 0);
