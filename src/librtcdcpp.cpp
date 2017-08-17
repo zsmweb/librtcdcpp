@@ -71,9 +71,14 @@ extern "C" {
       ice_cb(ice_cand_c);
     };
 
-    std::function<void(std::shared_ptr<rtcdcpp::DataChannel> channel)> onDataChannel = [dc_cb](std::shared_ptr<rtcdcpp::DataChannel> channel) {
-      dc_cb((DataChannel*) channel.get());
+    //This is not necessarily needed for parent process, move it to child/forked context?
+    DataChannel* child_dc;
+    std::function<void(std::shared_ptr<DataChannel> channel, void* requester)> onDataChannel = [dc_cb, &requester, &child_dc](std::shared_ptr<DataChannel> channel, void* requester) {
+      child_dc = (DataChannel *) channel.get();
+      dc_cb((DataChannel *) channel.get(), requester); // requester invalid (opaque ptr in pprocess), deprecate!
     };
+    //
+
     rtcdcpp::RTCConfiguration config;
     for(int i = 0; i < config_c.ice_servers->len; i++) {
       config.ice_servers.emplace_back(rtcdcpp::RTCIceServer{"stun3.l.google.com", 19302});
@@ -107,9 +112,7 @@ extern "C" {
     if (cpid == 0) {
       //child
       PeerConnection* child_pc;
-
-      DataChannel* child_dc;
-      child_pc = new rtcdcpp::PeerConnection(config, onLocalIceCandidate, onDataChannel);
+      child_pc = new rtcdcpp::PeerConnection(config, onLocalIceCandidate, onDataChannel, requester); //Passing requester here is invalid
       void *child_context = zmq_ctx_new ();
       void *responder = zmq_socket (child_context, ZMQ_REP);
       char bind_path[30];
@@ -219,6 +222,7 @@ extern "C" {
           case CLOSE_DC:
             _closeDataChannel(child_dc);
             sendSignal(responder);
+            alive = false; //!
             break;
           case GET_DC_SID:
             u_int16_t sid;
@@ -252,7 +256,7 @@ extern "C" {
             break;
           case SEND_STRING:
             {
-            sendSignal(responder); //req length
+            sendSignal(responder);
             size_t send_len;
             zmq_recv (responder, &send_len, sizeof(send_len), 0);
             char send_str[send_len];
@@ -270,7 +274,7 @@ extern "C" {
             sendSignal(responder); //req length
             zmq_recv (responder, &len, sizeof(len), 0);
             u_int8_t send_stuff[len];
-            sendSignal(responder); //req content
+            sendSignal(responder);
             zmq_recv (responder, send_stuff, len, 0);
             bool ret_bool = _SendBinary(child_dc, send_stuff, len);
             zmq_send (responder, &ret_bool, sizeof(bool), 0);
@@ -630,7 +634,7 @@ extern "C" {
   }
 
   void _closeDataChannel(DataChannel *dc) {
-    delete dc;
+    dc->Close();
   }
 
   void _SetOnOpen(DataChannel *dc, open_cb on_open_cb) {

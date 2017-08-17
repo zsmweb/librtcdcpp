@@ -43,7 +43,7 @@ GArray * g_array_append_vals(GArray* a, gconstpointer v, guint len);
 cdef_string = cdef_string[:-2] # Remove the trailing }
 
 cdef_string += '''
-extern "Python" void onDCCallback(DataChannel *dc);
+extern "Python" void onDCCallback(DataChannel *dc, void* socket);
 extern "Python" void onIceCallback(IceCandidate_C ice);
 
 extern "Python" void onOpened(void);

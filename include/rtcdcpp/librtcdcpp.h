@@ -39,7 +39,7 @@ typedef struct IceCandidate_C IceCandidate_C;
 IceCandidate_C* newIceCandidate(const char* candidate, const char* sdpMid, int sdpMLineIndex);
 
 typedef void (*on_ice_cb)(IceCandidate_C ice_c);
-typedef void (*on_dc_cb)(DataChannel *dc);
+typedef void (*on_dc_cb)(DataChannel *dc, void* socket);
 
 void* newPeerConnection(struct RTCConfiguration_C config, on_ice_cb ice_cb, on_dc_cb dc_cb);
 

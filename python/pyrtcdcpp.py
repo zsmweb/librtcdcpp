@@ -126,12 +126,12 @@ class PeerConnection():
         rtc_conf_s.ice_ufrag = ffi.NULL if rtc_conf._ice_ufrag is None else rtc_conf._ice_ufrag
         rtc_conf_s.ice_pwd = ffi.NULL if rtc_conf._ice_pwd is None else rtc_conf._ice_pwd
         rtc_conf_s.ice_servers = garray
-        self.pc = None #!
+
         @ffi.def_extern()
-        def onDCCallback(dc):
+        def onDCCallback(dc, pc):
             if onDCCallback_p is not None:
-                argument = DataChannel(dc, self.pc)
-                onDCCallback_p(argument)
+                argument = DataChannel(dc, pc)
+                onDCCallback_p(argument, pc)
         
         @ffi.def_extern()
         def onIceCallback(ice):
