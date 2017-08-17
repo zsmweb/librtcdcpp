@@ -15,7 +15,8 @@
 #include <functional>
 #include <iostream>
 #include <sys/types.h>
-
+#include <sys/wait.h>
+#include <list>
 #include <zmq.h>
 #define DESTROY_PC 0
 #define PARSE_SDP 1
@@ -56,6 +57,7 @@ extern "C" {
     zmq_recv (zmqsock, nothing, 0, 0);
   }
 
+  std::list<int> process_status;
 
   void* newPeerConnection(RTCConfiguration_C config_c, on_ice_cb ice_cb, on_dc_cb dc_cb) {
     //spdlog::set_level(spdlog::level::trace);
@@ -97,10 +99,10 @@ extern "C" {
        }
     */ 
     pid_t cpid = fork();
-
-    // Create a new REQ zmq soc
     void *context = zmq_ctx_new ();
     void *requester = zmq_socket (context, ZMQ_REQ);
+    int process_status_var;
+    process_status.push_front(process_status_var);
 
     if (cpid == 0) {
       //child
@@ -336,6 +338,17 @@ extern "C" {
     return requester;
   }
 
+  void _waitCallable(int i) {
+    pid_t process_id;
+    process_id = wait(&i);
+    printf("\nProcess %d has terminated with status code %d\n", process_id, i);
+  }
+
+  void processWait() {
+    for (int i : process_status) {
+      _waitCallable(std::ref(i)); //!
+    }
+  }
 
   void _destroyPeerConnection(PeerConnection *pc) {
     delete pc;

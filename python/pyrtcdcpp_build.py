@@ -31,6 +31,8 @@ typedef int8_t u_int8_t;
 typedef bool gboolean;
 typedef const void *gconstpointer;
 
+typedef unsigned int pid_t;
+
 GArray *
 g_array_new (gboolean zero_terminated,
              gboolean clear_,

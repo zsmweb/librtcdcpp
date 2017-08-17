@@ -99,15 +99,7 @@ void _SetOnBinaryMsgCallback(DataChannel *dc, on_binary_msg msg_binary_cb);
 void _SetOnClosedCallback(DataChannel *dc, on_close close_cb);
 void _SetOnErrorCallback(DataChannel *dc, on_error error_cb);
 
-/*
-//DataChannel Callback setters
-void SetOnOpen(DataChannel *dc, open_cb on_open_cb);
-void SetOnStringMsgCallback(DataChannel *dc, on_string_msg recv_str_cb);
-void SetOnBinaryMsgCallback(DataChannel *dc, on_binary_msg msg_binary_cb);
-void SetOnClosedCallback(DataChannel *dc, on_close close_cb);
-void SetOnErrorCallback(DataChannel *dc, on_error error_cb);
-DELETE this
-*/
+void processWait();
 #ifdef __cplusplus
 }
 #endif

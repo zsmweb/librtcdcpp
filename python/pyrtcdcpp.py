@@ -170,3 +170,6 @@ class PeerConnection():
             candidate = ffi.new("char[]", bytes(sdp[0], 'utf-8')) #s[
             lib.g_array_append_vals(garray, candidate, 1)
         return lib.SetRemoteIceCandidates(self.pc, garray) #
+
+def processWait():
+    lib.processWait()
