@@ -29,6 +29,7 @@ RUN apk add python3
 RUN python3 -m ensurepip
 RUN apk add python3-dev
 RUN apk add zeromq
+RUN apk add zeromq-dev
 RUN apk add libzmq
 RUN pip3 install --upgrade pip setuptools
 RUN pip3 install cffi
