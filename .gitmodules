@@ -5,5 +5,5 @@
 	path = spdlog
 	url = https://github.com/gabime/spdlog
 [submodule "examples/websocket_client/cpslib"]
-	path = examples/websocket_client/cpslib
-	url = git@github.com:hamon-in/cpslib.git
+  path = examples/websocket_client/cpslib
+	url = https://github.com/hamon-in/cpslib
