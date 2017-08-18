@@ -389,6 +389,7 @@ extern "C" {
     zmq_recv (socket, &length, sizeof(length), 0);
     sendSignal(socket); // dummy request for content
     char* recv_offer = (char*) malloc(length);
+    recv_offer[length] = '\0';
     zmq_recv (socket, recv_offer, length, 0);
     return recv_offer;
   }
@@ -401,6 +402,7 @@ extern "C" {
     sendSignal(socket);
     char *answer = (char *) malloc(length);
     zmq_recv (socket, answer, length, 0);
+    answer[length] = '\0';
     return answer;
   }
 
