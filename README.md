@@ -4,4 +4,8 @@ After a clone, do:
 * `docker build -f Dockerfile.amd64 -t librtcdcpp .` on AMD64/x86. `docker build -f Dockerfile.armv7 .` for ARMv7
 * `docker run -it librtcdcpp:latest`
 * Inside the container, `cd python/` and `./build.sh`
-* Run the stress test script. See help: `python stress-test.py --help`
+* `export LD_LIBRARY_PATH=../` (Since our built .so file will be in project root)
+* Run the stress test script. See help: `python3 stress-test.py --help`
+
+Note: Each time the library is made to create new 'peers', an IPC socket file will be created which has the path "/tmp/librtcdcpp{pid}". If not closed properly, these files will be left back.
+Do `rm /tmp/librtcdcpp*` to make sure the inodes don't get full.
