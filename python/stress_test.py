@@ -6,9 +6,9 @@ import argparse
 
 dc_stress_flag = False
 parser = argparse.ArgumentParser()
-parser.add_argument("--size", help="Size in kilobytes of each payload", default=32, type=int)
-parser.add_argument("--count", help="Number of times each payload gets sent", default=2000, type=int)
-parser.add_argument("--p2p-pairs", help="Number of p2p connections to make", default=2, type=int)
+parser.add_argument("--size", help="Size in kilobytes of each payload. Default is 32 kB.", default=32, type=int)
+parser.add_argument("--count", help="Number of times each payload gets sent. Default is 2000.", default=2000, type=int)
+parser.add_argument("--p2p-pairs", help="Number of p2p connections to make. Default is 2 (4 peers).", default=2, type=int)
 args = parser.parse_args()
 
 def stress(dc):
