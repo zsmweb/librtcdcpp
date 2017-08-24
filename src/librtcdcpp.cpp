@@ -347,6 +347,21 @@ extern "C" {
     pid_t process_id;
     process_id = wait(&i);
     printf("\nProcess %d has terminated with status code %d\n", process_id, i);
+    if (WIFEXITED(i)) {
+      printf("\nIt exited normally with status code %d\n", WEXITSTATUS(i));
+    }
+    if (WIFSIGNALED(i)) {
+      printf("\nIt exited by signal with sig no %d\n", WTERMSIG(i));
+      if (WCOREDUMP(i)) {
+        printf("\nIt exited with a coredump.\n");
+      }
+    }
+    if (WIFSTOPPED(i)) {
+      printf("\nProcess stopped by a trace signal %d\n", WSTOPSIG(i));
+    }
+    if (WIFCONTINUED(i)) {
+      printf("\nProcess resumed by SIGCONT signal\n");
+    }
   }
 
   void processWait() {
