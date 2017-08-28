@@ -11,7 +11,7 @@ ffibuilder.set_source("libpyrtcdcpp",
         #include <sys/types.h>
         #include "rtcdcpp/librtcdcpp.h"
         """,
-        include_dirs = ["../src/", "../include", "/usr/include/glib-2.0", "/usr/lib64/glib-2.0/include", "/usr/lib/glib-2.0/include"],
+        include_dirs = ["../src/", "../include", "/usr/include/glib-2.0", "/usr/lib64/glib-2.0/include", "/usr/lib/glib-2.0/include", "/usr/lib/arm-linux-gnueabihf/glib-2.0/include"],
         libraries = ["rtcdcpp"],
         library_dirs = ["../"])
 
@@ -27,6 +27,7 @@ struct GArray {
 };
 typedef struct GArray GArray;
 typedef int16_t u_int16_t;
+typedef u_int16_t uint16_t;
 typedef int8_t u_int8_t;
 typedef bool gboolean;
 typedef const void *gconstpointer;
