@@ -110,8 +110,8 @@ void SCTPWrapper::OnNotification(union sctp_notification *notify, size_t len) {
       size_t list_len;
       list_len = e_length - (sizeof(uint16_t) * 2 + sizeof(uint32_t) + sizeof(sctp_assoc_t));
       list_len /= sizeof(uint16_t);
-      if (list_len == 0) {
-        uint16_t streamid = reset_event.strreset_stream_list[-1];
+      if (list_len == 1) {
+        uint16_t streamid = 0;
         const uint8_t dc_close_data = DC_TYPE_CLOSE;
         const uint8_t *dc_close_ptr = &dc_close_data;
         OnMsgReceived(dc_close_ptr, sizeof(dc_close_ptr), streamid, PPID_CONTROL);
@@ -352,6 +352,7 @@ void SCTPWrapper::ResetSCTPStream(uint16_t stream_id, uint16_t srs_flags) {
   struct sctp_reset_streams stream_close;
   size_t no_of_streams = 1;
   size_t len = sizeof(sctp_assoc_t) + (2 + no_of_streams) * sizeof(uint16_t);
+  len = 0;
   memset(&stream_close, 0, len);
   stream_close.srs_flags = srs_flags;
   stream_close.srs_number_streams = no_of_streams;
