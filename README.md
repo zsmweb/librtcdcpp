@@ -1,7 +1,7 @@
 After a clone, do:
 
 * `git submodule init && git submodule update`
-* `docker build -f Dockerfile.amd64 -t librtcdcpp .` on AMD64/x86. `docker build -f Dockerfile.armv7 .` for ARMv7
+* `docker build -f Dockerfile-debian.armv7 -t librtcdcpp .` for ARMv7
 * `docker run -it librtcdcpp:latest`
 * Inside the container, `cd python/` and `./build.sh`
 * `export LD_LIBRARY_PATH=../` (Since our built .so file will be in project root)
