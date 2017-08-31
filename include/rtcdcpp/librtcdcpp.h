@@ -100,6 +100,7 @@ void _SetOnClosedCallback(DataChannel *dc, on_close close_cb);
 void _SetOnErrorCallback(DataChannel *dc, on_error error_cb);
 
 void processWait();
+void exitter(int ret);
 #ifdef __cplusplus
 }
 #endif

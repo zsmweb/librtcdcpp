@@ -1,4 +1,4 @@
-from pyrtcdcpp import RTCConf, PeerConnection, processWait
+from pyrtcdcpp import RTCConf, PeerConnection, processWait, exitter
 from pprint import pprint
 from threading import Thread
 from time import sleep, time
@@ -50,6 +50,7 @@ class Peer1(PeerConnection):
 
     def onClose(self):
         print("DC1 Closed")
+        exitter(0)
 
 class Peer2(PeerConnection):
     def onCandidate(self, ice):
@@ -65,6 +66,7 @@ class Peer2(PeerConnection):
 
     def onClose(self):
         print("DC2 Closed")
+        exitter(0)
 
 for i in range(0, args.p2p_pairs):
     pc1 = Peer1()

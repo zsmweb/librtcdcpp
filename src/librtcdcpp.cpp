@@ -368,6 +368,10 @@ extern "C" {
     }
   }
 
+  void exitter(int ret) {
+    exit(ret);
+  }
+
   void _destroyPeerConnection(PeerConnection *pc) {
     delete pc;
   }
