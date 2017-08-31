@@ -105,18 +105,10 @@ void DataChannel::OnBinaryMsg(ChunkPtr msg) {
   }
 }
 
-void exitter_fn() {
-  char tmp_path[30];
-  snprintf(tmp_path, sizeof(tmp_path), "/tmp/librtcdcpp%d", getpid());
-  remove(tmp_path);
-}
-
 void DataChannel::OnClosed() {
   if (this->closed_cb) {
     this->closed_cb();
   }
-  std::thread exitter = std::thread(&exitter_fn);
-  exitter.detach();
 }
 
 void DataChannel::OnError(std::string description) {

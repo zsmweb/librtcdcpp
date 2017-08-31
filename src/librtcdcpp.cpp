@@ -369,6 +369,9 @@ extern "C" {
   }
 
   void exitter(int ret) {
+    char tmp_path[30];
+    snprintf(tmp_path, sizeof(tmp_path), "/tmp/librtcdcpp%d", getpid());
+    remove(tmp_path);
     exit(ret);
   }
 
