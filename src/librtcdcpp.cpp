@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 #include <rtcdcpp/PeerConnection.hpp>
-#include <rtcdcpp/librtcdcpp.h> //hpp?
+#include <rtcdcpp/librtcdcpp.h>
 #include <rtcdcpp/DataChannel.hpp>
 #include <glib.h>
 #include <stdbool.h>
@@ -334,9 +334,7 @@ extern "C" {
     } else {
       // Parent
       char connect_path[30];
-      //sleep(1);
       snprintf(connect_path, sizeof(connect_path), "ipc:///tmp/librtcdcpp%d", cpid);
-      //TODO: Clean up/close properly so that socket files don't linger in /tmp/
       int rc2 = zmq_connect(requester, connect_path);
       //assert (rc2 == 0);
     }
