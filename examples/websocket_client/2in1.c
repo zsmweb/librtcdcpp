@@ -131,15 +131,9 @@ int main() {
 
   struct DataChannel* dc;
 
-  void exitter() {
-    exit(0);
-  }
-
   void custom_close1() {
     printf("\nCLOSE1 %d\n", getpid());
-    pthread_t t1;
-    pthread_create(&t1, NULL, (void *) exitter, NULL);
-    pthread_detach(t1);
+    exitter(0);
   }
   void onDCCallback(struct DataChannel* dc, void *socket) {
     printf("\n=sock1===Got datachannel!=======\n", getpid());
@@ -148,9 +142,7 @@ int main() {
   }
   void custom_close2() {
     printf("\nCLOSE2 %d\n", getpid());
-    pthread_t t1;
-    pthread_create(&t1, NULL, (void *) exitter, NULL);
-    pthread_detach(t1);
+    exitter(0);
   }
 
   void onDCCallback1(struct DataChannel* dc, void* socket) {
