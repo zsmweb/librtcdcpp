@@ -1,7 +1,6 @@
 /.idea/
 /BUILD/
 /examples/.env/
-*.so
 CMakeCache.txt
 CMakeFiles/
 Makefile
