@@ -203,19 +203,15 @@ extern "C" {
             sendSignal(responder); // req proto length
             zmq_recv(responder, &proto_arg_length, sizeof(proto_arg_length), 0);
             sendSignal(responder); // req label
-            char label_arg[label_arg_length];
-            char proto_arg[proto_arg_length] = "";
+            char* label_arg = (char*) malloc(label_arg_length);
+            char* proto_arg = (char*) malloc(proto_arg_length);
             zmq_recv(responder, label_arg, label_arg_length, 0);
-            label_arg[label_arg_length] = '\0';
+            (label_arg)[label_arg_length] = '\0';
             sendSignal(responder); // req proto
             zmq_recv(responder, proto_arg, proto_arg_length, 0);
-            proto_arg[proto_arg_length] = '\0';
+            (proto_arg)[proto_arg_length] = '\0';
             child_dc = (DataChannel *) malloc(sizeof(DataChannel *));
-            if (proto_arg_length == 0) {
-              child_dc = _CreateDataChannel(child_pc, label_arg, "");
-            } else {
-              child_dc = _CreateDataChannel(child_pc, label_arg, proto_arg);
-            }
+            child_dc = _CreateDataChannel(child_pc, label_arg, proto_arg);
             sendSignal(responder);
             }
             break;
