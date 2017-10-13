@@ -402,6 +402,10 @@ extern "C" {
   void _waitCallable(int i) {
     pid_t process_id;
     process_id = wait(&i);
+    if (process_id == -1) {
+      //printf("\nWait err: %s\n", strerror(errno));
+      return;
+    }
     printf("\nProcess %d has terminated with status code %d\n", process_id, i);
     if (WIFEXITED(i)) {
       printf("\nIt exited normally with status code %d\n", WEXITSTATUS(i));
@@ -463,12 +467,16 @@ extern "C" {
     int child_command = GENERATE_OFFER;
     zmq_send (socket, &child_command, sizeof(child_command), 0); // Send command request
     // Response will contain length of generated offer
-    size_t length;
-    zmq_recv (socket, &length, sizeof(length), 0);
+    size_t* length = (size_t *) malloc(sizeof(size_t));
+    if (zmq_recv (socket, length, sizeof(length), 0) == -1) {
+      //printf("\nGenerate offer length receive error: %d\n", errno);
+      return NULL;
+    }
     sendSignal(socket); // dummy request for content
-    char* recv_offer = (char*) malloc(length);
-    recv_offer[length] = '\0';
-    zmq_recv (socket, recv_offer, length, 0);
+    char* recv_offer = (char*) malloc(*length);
+    recv_offer[*length] = '\0';
+    zmq_recv (socket, recv_offer, *length, 0);
+    free(length);
     return recv_offer;
   }
 
@@ -476,7 +484,10 @@ extern "C" {
     int command = GENERATE_ANSWER;
     zmq_send (socket, &command, sizeof(command), 0);
     size_t length;
-    zmq_recv (socket, &length, sizeof(length), 0);
+    if (zmq_recv (socket, &length, sizeof(length), 0) == -1) {
+      //printf("\nGenerate answer length receive error: %d\n", errno);
+      return NULL;
+    }
     sendSignal(socket);
     char *answer = (char *) malloc(length);
     zmq_recv (socket, answer, length, 0);
