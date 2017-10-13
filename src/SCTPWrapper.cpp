@@ -353,7 +353,7 @@ void SCTPWrapper::ResetSCTPStream(uint16_t stream_id, uint16_t srs_flags) {
   if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RESET_STREAMS, stream_close, static_cast<socklen_t>(reinterpret_cast<uintptr_t>(&len))) == -1) {
     logger->error("Could not set socket options for SCTP_RESET_STREAMS. errno={}", errno); 
   } else {
-    logger->info("SCTP_RESET_STREAMS socket option has been set successfully");
+    logger->info("SCTP_RESET_STREAMS socket option has been set successfully on SID: {}", stream_id);
   }
   free(stream_close);
   stream_close = NULL;
