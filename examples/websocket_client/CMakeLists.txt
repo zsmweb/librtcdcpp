@@ -13,14 +13,14 @@
 #find_library(CPS_LIB NAMES pslib)
 #target_link_libraries(testclient pslib "${CPS_LIB}" rtcdcpp)
 
-add_executable(c_offer
-            c_offer.c
-            "${CMAKE_CURRENT_SOURCE_DIR}/../../include/rtcdcpp/librtcdcpp.h"
-            )
-target_link_libraries(c_offer rtcdcpp)
-set_target_properties(c_offer
-  PROPERTIES LINKER_LANGUAGE C
-  )
+#add_executable(c_offer
+            #c_offer.c
+            #"${CMAKE_CURRENT_SOURCE_DIR}/../../include/rtcdcpp/librtcdcpp.h"
+            #)
+#target_link_libraries(c_offer rtcdcpp)
+#set_target_properties(c_offer
+  #PROPERTIES LINKER_LANGUAGE C
+  #)
 
 add_executable(2in1
             2in1.c
@@ -31,14 +31,14 @@ set_target_properties(2in1
   PROPERTIES LINKER_LANGUAGE C
   )
 
-add_executable(c_answer
-            c_answer.c
-            "${CMAKE_CURRENT_SOURCE_DIR}/../../include/rtcdcpp/librtcdcpp.h"
-            )
-target_link_libraries(c_answer rtcdcpp)
-set_target_properties(c_answer
-  PROPERTIES LINKER_LANGUAGE C
-  )
+#add_executable(c_answer
+            #c_answer.c
+            #"${CMAKE_CURRENT_SOURCE_DIR}/../../include/rtcdcpp/librtcdcpp.h"
+            #)
+#target_link_libraries(c_answer rtcdcpp)
+#set_target_properties(c_answer
+  #PROPERTIES LINKER_LANGUAGE C
+  #)
 
 #add_executable(testclientoffer
       #json/json.h
