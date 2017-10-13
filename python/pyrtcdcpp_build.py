@@ -44,12 +44,12 @@ GArray * g_array_append_vals(GArray* a, gconstpointer v, guint len);
 cdef_string = cdef_string[:-2] # Remove the trailing }
 
 cdef_string += '''
-extern "Python" void onDCCallback(DataChannel *dc, void* socket);
+extern "Python" void onDCCallback(int pid, void* socket, cb_event_loop* cb_loop);
 extern "Python" void onIceCallback(IceCandidate_C ice);
 
 extern "Python" void onOpened(void);
-extern "Python" void onClosed(void);
-extern "Python" void onStringMsg(const char* message);
+extern "Python" void onClosed(int pid);
+extern "Python" void onStringMsg(int pid, const char* message);
 extern "Python" void onBinaryMsg(void* message);
 extern "Python" void onError(const char* description);
 
