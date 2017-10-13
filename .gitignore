@@ -7,3 +7,15 @@ CMakeFiles/
 Makefile
 cmake_install.cmake
 testclient
+a.out
+*.patch
+2in1
+c_both
+c_answer
+c_offer
+testclientanswer
+testclientc
+testclientoffer
+*.pb.*
+libpyrtcdcpp.*
+__pycache__/
