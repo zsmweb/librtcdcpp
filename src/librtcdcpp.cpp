@@ -428,10 +428,12 @@ extern "C" {
     for (int i : process_status) {
       _waitCallable(std::ref(i)); //!
     }
+    sleep(3); //Maybe a little overkill or not needed at all. Run some tests again
   }
 
   void exitter(pid_t ret, int pid) {
     char tmp_path[30];
+    sleep(1); // During onClose, to let the other peer reach this stage. (This is supposed to be parent context)
     snprintf(tmp_path, sizeof(tmp_path), "/tmp/librtcdcpp%d", getpid());
     remove(tmp_path);
     exit(ret);
