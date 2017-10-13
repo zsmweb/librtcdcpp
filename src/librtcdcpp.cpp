@@ -655,14 +655,14 @@ extern "C" {
     return pc->SetRemoteIceCandidates(candidate_sdps_vec);
   }
 
-  DataChannel* _CreateDataChannel(PeerConnection *pc, const char* label, const char* protocol) {
+  DataChannel* _CreateDataChannel(PeerConnection *pc, char* label, char* protocol) {
     std::string label_string (label);
     std::string protocol_string (protocol);
-    //TODO: label length doesn't seem to be right.
+    free(label); free(protocol);
     if (protocol_string.size() > 0) {
-      return pc->CreateDataChannel(label, protocol).get();
+      return pc->CreateDataChannel(label_string, protocol_string).get();
     } else {
-      return pc->CreateDataChannel(label).get();
+      return pc->CreateDataChannel(label_string).get();
     }
   }
 
