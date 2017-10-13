@@ -5,17 +5,21 @@
 #pragma once
 
 #ifdef __cplusplus
+#include <rtcdcpp/cb_event_loop.hpp>
 extern "C" {
 typedef struct rtcdcpp::PeerConnection PeerConnection;
 typedef struct rtcdcpp::DataChannel DataChannel;
 #else
 typedef struct PeerConnection PeerConnection;
 typedef struct DataChannel DataChannel;
+typedef struct cb_event_loop cb_event_loop;
 #endif
 
 #include <stdbool.h>
 #include <glib.h>
 #include <sys/types.h>
+
+cb_event_loop* init_cb_event_loop();
 
 struct RTCIceServer_C {
   const char* hostname;
@@ -31,6 +35,7 @@ struct RTCConfiguration_C {
   const GArray* certificates; // RTCCertificate
 };
 struct IceCandidate_C {
+    int pid;
     const char* candidate;
     const char* sdpMid;
     int sdpMLineIndex;
@@ -40,8 +45,15 @@ IceCandidate_C* newIceCandidate(const char* candidate, const char* sdpMid, int s
 
 typedef void (*on_ice_cb)(IceCandidate_C ice_c);
 typedef void (*on_dc_cb)(DataChannel *dc, void* socket);
+typedef void (*dc_fn_ptr_pid)(int, void*, cb_event_loop*);
 
-void* newPeerConnection(struct RTCConfiguration_C config, on_ice_cb ice_cb, on_dc_cb dc_cb);
+struct pc_info {
+  int pid;
+  void* socket;
+};
+
+typedef struct pc_info pc_info;
+pc_info newPeerConnection(struct RTCConfiguration_C config, on_ice_cb ice_cb, dc_fn_ptr_pid dc_cb, cb_event_loop* cb_loop);
 
 void sendSignal(void* zmqsock);
 void signalSink(void* zmqsock);
@@ -52,16 +64,17 @@ char* GenerateOffer(void* socket);
 char* GenerateAnswer(void* socket);
 bool SetRemoteIceCandidate(void* socket, const char* candidate_sdp); 
 bool SetRemoteIceCandidates(void* socket, const GArray* candidate_sdps);
-void CreateDataChannel(void* socket, const char* label, const char* protocol);
+
+int CreateDataChannel(void* socket, const char* label, const char* protocol);
 // DataChannel member functions
 // TODO 
 u_int16_t getDataChannelStreamID(void* socket, DataChannel *dc);
 u_int8_t getDataChannelType(void* socket, DataChannel *dc);
 const char* getDataChannelLabel(void* socket, DataChannel *dc);
 const char* getDataChannelProtocol(void* socket, DataChannel *dc);
-bool SendString(void* socket, DataChannel *dc, const char* msg);
+bool SendString(void* socket, const char* msg);
 bool SendBinary(void* socket, DataChannel *dc, const u_int8_t *msg, int len);
-void closeDataChannel(void* socket, DataChannel *dc);
+void closeDataChannel(void* socket);
 
 
 void _destroyPeerConnection(PeerConnection* pc);
@@ -70,7 +83,7 @@ char* _GenerateOffer(PeerConnection* pc);
 char* _GenerateAnswer(PeerConnection* pc);
 bool _SetRemoteIceCandidate(PeerConnection* pc, const char* candidate_sdp); 
 bool _SetRemoteIceCandidates(PeerConnection* pc, const GArray* candidate_sdps);
-DataChannel *_CreateDataChannel(PeerConnection* pc, const char* label, const char* protocol);
+DataChannel *_CreateDataChannel(PeerConnection* pc, char* label, char* protocol);
 // DataChannel member functions
 u_int16_t _getDataChannelStreamID(DataChannel *dc);
 u_int8_t _getDataChannelType(DataChannel *dc);
@@ -82,15 +95,15 @@ void _closeDataChannel(DataChannel *dc);
 
 //DataChannel Callback related methods
 typedef void (*open_cb)(void);
-typedef void (*on_string_msg)(const char* message);
+typedef void (*on_string_msg)(int pid, const char* message);
 typedef void (*on_binary_msg)(void* message);
-typedef void (*on_close)(void);
+typedef void (*on_close)(int pid);
 typedef void (*on_error)(const char* description);
 
-void SetOnOpen(void *socket, DataChannel *dc, open_cb on_open_cb);
-void SetOnStringMsgCallback(void *socket, DataChannel *dc, on_string_msg recv_str_cb);
-void SetOnBinaryMsgCallback(void *socket, DataChannel *dc, on_binary_msg msg_binary_cb);
-void SetOnClosedCallback(void *socket, DataChannel *dc, on_close close_cb);
+void SetOnOpen(int pid, cb_event_loop* cb_event_loop, open_cb on_open_cb);
+void SetOnStringMsgCallback(int pid, cb_event_loop* cb_event_loop, on_string_msg recv_str_cb);
+void SetOnBinaryMsgCallback(void *socket, on_binary_msg msg_binary_cb);
+void SetOnClosedCallback(int pid, cb_event_loop* cb_event_loop, on_close close_cb);
 void SetOnErrorCallback(void *socket, DataChannel *dc, on_error error_cb);
 
 void _SetOnOpen(DataChannel *dc, open_cb on_open_cb);
@@ -100,7 +113,7 @@ void _SetOnClosedCallback(DataChannel *dc, on_close close_cb);
 void _SetOnErrorCallback(DataChannel *dc, on_error error_cb);
 
 void processWait();
-void exitter(int ret);
+void exitter(pid_t pid, int ret);
 #ifdef __cplusplus
 }
 #endif

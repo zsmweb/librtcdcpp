@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 #include <rtcdcpp/PeerConnection.hpp>
+#include <rtcdcpp/callbacks.pb.h>
 #include <rtcdcpp/librtcdcpp.h>
 #include <rtcdcpp/DataChannel.hpp>
 #include <glib.h>
@@ -15,9 +16,13 @@
 #include <functional>
 #include <iostream>
 #include <sys/types.h>
+#include <signal.h>
 #include <sys/wait.h>
 #include <list>
+#include <unordered_map>
 #include <zmq.h>
+#include <thread>
+#include <errno.h>
 #define DESTROY_PC 0
 #define PARSE_SDP 1
 #define GENERATE_OFFER 2
@@ -32,11 +37,6 @@
 #define SEND_STRING 11
 #define SEND_BINARY 12
 #define CLOSE_DC 13
-#define SET_ON_OPEN_CB 14
-#define SET_ON_STRING_MSG_CB 15
-#define SET_ON_BINARY_MSG_CB 16
-#define SET_ON_CLOSED_CB 17
-#define SET_ON_ERROR_CB 18
 
 extern "C" {
   IceCandidate_C* newIceCandidate(const char* candidate, const char* sdpMid, int sdpMLineIndex) {
@@ -59,16 +59,56 @@ extern "C" {
 
   std::list<int> process_status;
 
-  void* newPeerConnection(RTCConfiguration_C config_c, on_ice_cb ice_cb, on_dc_cb dc_cb) {
-    //spdlog::set_level(spdlog::level::trace);
+  void fillInCandidate(librtcdcpp::Callback* callback, std::string candidate, std::string sdpMid, int sdpMLineIndex) {
+    librtcdcpp::Callback::onCandidate* on_candidate = new librtcdcpp::Callback::onCandidate;
+    on_candidate->set_candidate(candidate.c_str());
+    on_candidate->set_sdpmid(sdpMid.c_str());
+    on_candidate->set_sdpmlineindex(sdpMLineIndex);
+    callback->set_allocated_on_cand(on_candidate);
+  }
+
+  void fillInStringMessage(librtcdcpp::Callback* callback, std::string message) {
+    librtcdcpp::Callback::onMessage* on_message = new librtcdcpp::Callback::onMessage;
+    on_message->set_message(message);
+    callback->set_allocated_on_msg(on_message);
+  }
+
+  void SetCallbackTypeOnChannel(librtcdcpp::Callback* callback) {
+    callback->set_cbwo_args(librtcdcpp::Callback::ON_CHANNEL);
+  }
+
+  void SetCallbackTypeOnClose(librtcdcpp::Callback* callback) {
+    callback->set_cbwo_args(librtcdcpp::Callback::ON_CLOSE);
+  }
+
+  cb_event_loop* init_cb_event_loop() {
+    printf("\nParent PID is: %d\n", getpid());
+    cb_event_loop* cb_loop = new cb_event_loop();
+    return cb_loop;
+  }
+
+  pc_info newPeerConnection(RTCConfiguration_C config_c, on_ice_cb ice_cb, dc_fn_ptr_pid dc_cb, cb_event_loop* parent_event_loop) {
+    //spdlog::set_level(spdlog::level::info);
     //spdlog::set_pattern("*** [%H:%M:%S] %P %v ***");
+    
+    // Local callback that is registered to 'route' the callback to the event loop socket
     std::function<void(rtcdcpp::PeerConnection::IceCandidate)> onLocalIceCandidate = [ice_cb](rtcdcpp::PeerConnection::IceCandidate candidate)
     {
       IceCandidate_C ice_cand_c;
       ice_cand_c.candidate = candidate.candidate.c_str(); //
       ice_cand_c.sdpMid = candidate.sdpMid.c_str();
       ice_cand_c.sdpMLineIndex = candidate.sdpMLineIndex;
-      ice_cb(ice_cand_c);
+      librtcdcpp::Callback* callback = new librtcdcpp::Callback;
+      fillInCandidate(callback, ice_cand_c.candidate, ice_cand_c.sdpMid, ice_cand_c.sdpMLineIndex);
+      std::string serialized_cb;
+      callback->SerializeToString(&serialized_cb);
+      void *child_to_parent_context = zmq_ctx_new ();
+      void *pusher = zmq_socket (child_to_parent_context, ZMQ_PUSH);
+      char cb_connect_path[33];
+      snprintf(cb_connect_path, sizeof(cb_connect_path), "ipc:///tmp/librtcdcpp%d-cb", getpid());
+      int cb_rc = zmq_connect (pusher, cb_connect_path);
+      zmq_send (pusher, (const void *) serialized_cb.c_str(), serialized_cb.size(), 0);
+      zmq_close (pusher);
     };
 
     rtcdcpp::RTCConfiguration config;
@@ -97,18 +137,74 @@ extern "C" {
     */ 
 
     pid_t cpid = fork();
+    //TODO: Try using some options from SETSOCKOPT
     void *context = zmq_ctx_new ();
     void *requester = zmq_socket (context, ZMQ_REQ);
+
+    void *cb_context = zmq_ctx_new ();
+    void *cb_pull_socket = zmq_socket (cb_context, ZMQ_PULL);
+
+    pc_info pc_info_ret;
     int process_status_var;
     process_status.push_front(process_status_var);
 
     if (cpid == 0) {
       //child
-
       DataChannel* child_dc;
       std::function<void(std::shared_ptr<DataChannel> channel, void* requester)> onDataChannel = [dc_cb, &requester, &child_dc](std::shared_ptr<DataChannel> channel, void* requester) {
+        void *child_to_parent_context = zmq_ctx_new ();
+        // TODO: onBinary and onError callbacks (later)
+        std::function<void(std::string string1)> onStringMsg = [child_to_parent_context](std::string string1) {
+          librtcdcpp::Callback* callback = new librtcdcpp::Callback;
+          fillInStringMessage(callback, string1);
+          std::string serialized_cb;
+          callback->SerializeToString(&serialized_cb);
+          void *pusher = zmq_socket (child_to_parent_context, ZMQ_PUSH);
+          char cb_connect_path[33];
+          snprintf(cb_connect_path, sizeof(cb_connect_path), "ipc:///tmp/librtcdcpp%d-cb", getpid());
+          int cb_rc = zmq_connect (pusher, cb_connect_path);
+          zmq_send (pusher, (const void *) serialized_cb.c_str(), serialized_cb.size(), 0);
+          zmq_close (pusher); 
+        };
+
+        std::function<void()> onClosed = [child_to_parent_context]() {
+          librtcdcpp::Callback* callback = new librtcdcpp::Callback;
+          SetCallbackTypeOnClose(callback);
+          std::string serialized_cb;
+          callback->SerializeToString(&serialized_cb);
+          void *pusher = zmq_socket (child_to_parent_context, ZMQ_PUSH);
+          char cb_connect_path[33];
+          snprintf(cb_connect_path, sizeof(cb_connect_path), "ipc:///tmp/librtcdcpp%d-cb", getpid());
+          int cb_rc = zmq_connect (pusher, cb_connect_path);
+          zmq_send (pusher, (const void *) serialized_cb.c_str(), serialized_cb.size(), 0);
+          //zmq_setsockopt(pusher,  //no linger?
+          if (zmq_close (pusher) != 0) {
+            //printf("\nZMQ close error: %s\n", strerror(errno));
+          }
+          if (zmq_term(child_to_parent_context) != 0) {
+            //printf("\nZMQ term error: %s\n", strerror(errno));
+          }
+          std::thread ext(exitter, 0, getpid());
+          ext.detach();
+        };
+        
         child_dc = (DataChannel *) channel.get();
-        dc_cb((DataChannel *) channel.get(), requester); // requester invalid (opaque ptr in pprocess), deprecate!
+        child_dc->SetOnClosedCallback(onClosed);
+        child_dc->SetOnStringMsgCallback(onStringMsg);
+
+        librtcdcpp::Callback* callback = new librtcdcpp::Callback;
+        SetCallbackTypeOnChannel(callback);
+        std::string serialized_cb;
+        if (callback->SerializeToString(&serialized_cb) == false) {
+          printf("\nDC cb serialize error!\n");
+          // return?
+        }
+        void *pusher = zmq_socket (child_to_parent_context, ZMQ_PUSH);
+        char cb_connect_path[33];
+        snprintf(cb_connect_path, sizeof(cb_connect_path), "ipc:///tmp/librtcdcpp%d-cb", getpid());
+        int cb_rc = zmq_connect (pusher, cb_connect_path);
+        zmq_send (pusher, (const void *) serialized_cb.c_str(), serialized_cb.size(), 0);
+        zmq_close (pusher);
       };
 
       PeerConnection* child_pc;
@@ -118,6 +214,7 @@ extern "C" {
       char bind_path[30];
       snprintf(bind_path, sizeof(bind_path), "ipc:///tmp/librtcdcpp%d", getpid());
       int rc1 = zmq_bind (responder, bind_path);
+      //printf("\nCreated file %s\n", bind_path);
 
       assert (rc1 == 0);
       bool alive = true;
@@ -212,7 +309,8 @@ extern "C" {
             (proto_arg)[proto_arg_length] = '\0';
             child_dc = (DataChannel *) malloc(sizeof(DataChannel *));
             child_dc = _CreateDataChannel(child_pc, label_arg, proto_arg);
-            sendSignal(responder);
+            int pid = getpid();
+            zmq_send(responder, &pid, sizeof(pid), 0); 
             }
             break;
           case CLOSE_DC:
@@ -276,65 +374,29 @@ extern "C" {
             zmq_send (responder, &ret_bool, sizeof(bool), 0);
             }
             break;
-          case SET_ON_OPEN_CB:
-            //Get onOpenCB function pointer
-            {
-            sendSignal(responder);
-            // alloc?
-            open_cb open_callback = (open_cb) malloc(sizeof(open_cb));
-            zmq_recv (responder, &open_callback, sizeof(open_cb), 0);
-            _SetOnOpen(child_dc, open_callback);
-            sendSignal(responder);
-            }
-            break;
-          case SET_ON_STRING_MSG_CB:
-            {
-            sendSignal(responder);
-            on_string_msg string_callback = (on_string_msg) malloc(sizeof(on_string_msg));
-            zmq_recv (responder, &string_callback, sizeof(on_string_msg), 0);
-            _SetOnStringMsgCallback(child_dc, string_callback);
-            sendSignal(responder);
-            }
-            break;
-          case SET_ON_BINARY_MSG_CB:
-            {
-            sendSignal(responder);
-            on_binary_msg binary_callback = (on_binary_msg) malloc(sizeof(on_binary_msg));
-            zmq_recv (responder, &binary_callback, sizeof(on_binary_msg), 0);
-            _SetOnBinaryMsgCallback(child_dc, binary_callback);
-            sendSignal(responder);
-            }
-            break;
-          case SET_ON_ERROR_CB:
-            {
-            sendSignal(responder);
-            on_error error_callback = (on_error) malloc(sizeof(on_error));
-            zmq_recv (responder, &error_callback, sizeof(on_error), 0);
-            _SetOnErrorCallback(child_dc, error_callback);
-            sendSignal(responder);
-            }
-            break;
-          case SET_ON_CLOSED_CB:
-            {
-            sendSignal(responder);
-            on_close close_callback = (on_close) malloc(sizeof(close_callback));
-            zmq_recv (responder, &close_callback, sizeof(on_close), 0);
-            _SetOnClosedCallback(child_dc, close_callback);
-            sendSignal(responder);
-            }
-            break;
           default:
             break;
         }
       }
     } else {
       // Parent
+      char cb_bind_path[33];
+      snprintf(cb_bind_path, sizeof(cb_bind_path), "ipc:///tmp/librtcdcpp%d-cb", cpid);
+      zmq_connect (cb_pull_socket, cb_bind_path);
+      zmq_bind (cb_pull_socket, cb_bind_path);
+      //printf("\nCreated file %s\n", cb_bind_path);
+      parent_event_loop->addSocket(cpid, requester);
+      parent_event_loop->add_pull_socket(cpid, cb_pull_socket);
+      parent_event_loop->add_on_candidate(cpid, ice_cb);
+      parent_event_loop->add_on_datachannel(cpid, dc_cb);
       char connect_path[30];
       snprintf(connect_path, sizeof(connect_path), "ipc:///tmp/librtcdcpp%d", cpid);
       int rc2 = zmq_connect(requester, connect_path);
       //assert (rc2 == 0);
+      pc_info_ret.socket = requester;
+      pc_info_ret.pid = cpid;
     }
-    return requester;
+    return pc_info_ret;
   }
 
   void _waitCallable(int i) {
@@ -364,7 +426,7 @@ extern "C" {
     }
   }
 
-  void exitter(int ret) {
+  void exitter(pid_t ret, int pid) {
     char tmp_path[30];
     snprintf(tmp_path, sizeof(tmp_path), "/tmp/librtcdcpp%d", getpid());
     remove(tmp_path);
@@ -448,7 +510,7 @@ extern "C" {
     return ret_val;
   }
 
-  void CreateDataChannel(void* socket, const char* label, const char* protocol) {
+  int CreateDataChannel(void* socket, const char* label, const char* protocol) {
     int command = CREATE_DC;
     zmq_send (socket, &command, sizeof(command), 0);
     signalSink(socket);
@@ -462,10 +524,12 @@ extern "C" {
     zmq_send (socket, label, label_length, 0);
     signalSink(socket);
     zmq_send (socket, protocol, protocol_length, 0);
-    signalSink(socket);
+    int pid;
+    zmq_recv (socket, &pid, sizeof(pid), 0);
+    return pid;
   };
   
-  void closeDataChannel(void* socket, DataChannel* dc) {
+  void closeDataChannel(void* socket) {
     int command = CLOSE_DC;
     zmq_send (socket, &command, sizeof(command), 0);
     signalSink(socket);
@@ -513,7 +577,7 @@ extern "C" {
   }
 
 
-  bool SendString(void* socket, DataChannel *dc, const char* msg) {
+  bool SendString(void* socket, const char* msg) {
     int command = SEND_STRING;
     zmq_send (socket, &command, sizeof(command), 0);
     signalSink(socket);
@@ -541,44 +605,24 @@ extern "C" {
   }
 
 
-  void SetOnOpen(void *socket, DataChannel *dc, open_cb on_open_cb) {
-    int command = SET_ON_OPEN_CB;
-    zmq_send (socket, &command, sizeof(command), 0);
-    signalSink(socket);
-    zmq_send (socket, &on_open_cb, sizeof(open_cb), 0);
-    signalSink(socket);
+  void SetOnOpen(int pid, cb_event_loop* cb_event_loop, open_cb on_open_cb) {
+    cb_event_loop->add_on_open(pid, on_open_cb);
   }
 
-  void SetOnStringMsgCallback(void *socket, DataChannel *dc, on_string_msg recv_str_cb) {
-    int command = SET_ON_STRING_MSG_CB;
-    zmq_send (socket, &command, sizeof(command), 0);
-    signalSink(socket);
-    zmq_send (socket, &recv_str_cb, sizeof(on_string_msg), 0);
-    signalSink(socket);
+  void SetOnStringMsgCallback(int pid, cb_event_loop* cb_event_loop, on_string_msg recv_str_cb) {
+    cb_event_loop->add_on_string(pid, recv_str_cb);
   }
 
-  void SetOnBinaryMsgCallback(void *socket, DataChannel *dc, on_binary_msg msg_binary_cb) {
-    int command = SET_ON_BINARY_MSG_CB;
-    zmq_send (socket, &command, sizeof(command), 0);
-    signalSink(socket);
-    zmq_send (socket, &msg_binary_cb, sizeof(on_binary_msg), 0);
-    signalSink(socket);
+  void SetOnBinaryMsgCallback(void *socket, on_binary_msg msg_binary_cb) {
+    //TODO: SetOnBinaryMsgCallback
   }
 
   void SetOnErrorCallback(void *socket, DataChannel *dc, on_error error_cb) {
-    int command = SET_ON_ERROR_CB;
-    zmq_send (socket, &command, sizeof(command), 0);
-    signalSink(socket);
-    zmq_send (socket, &error_cb, sizeof(on_error), 0);
-    signalSink(socket);
+    //TODO: SetOnErrorCallback
   }
 
-  void SetOnClosedCallback(void *socket, DataChannel *dc, on_close close_cb) {
-    int command = SET_ON_CLOSED_CB;
-    zmq_send (socket, &command, sizeof(command), 0);
-    signalSink(socket);
-    zmq_send (socket, &close_cb, sizeof(on_close), 0);
-    signalSink(socket);
+  void SetOnClosedCallback(int pid, cb_event_loop* cb_event_loop, on_close close_cb) {
+    cb_event_loop->add_on_close(pid, close_cb);
   }
 
   char* _GenerateOffer(PeerConnection *pc) {
@@ -653,37 +697,5 @@ extern "C" {
 
   void _closeDataChannel(DataChannel *dc) {
     dc->Close();
-  }
-
-  void _SetOnOpen(DataChannel *dc, open_cb on_open_cb) {
-    dc->SetOnOpen(on_open_cb);
-  }
-
-  void _SetOnStringMsgCallback(DataChannel *dc, on_string_msg recv_str_cb) {
-    std::function<void(std::string string1)> recv_callback = [recv_str_cb](std::string string1) {
-      recv_str_cb(string1.c_str());
-    };
-    dc->SetOnStringMsgCallback(recv_callback);
-  }
-
-  void _SetOnBinaryMsgCallback(DataChannel *dc, on_binary_msg msg_binary_cb) {
-    std::function<void(rtcdcpp::ChunkPtr)> msg_binary_callback = [msg_binary_cb](rtcdcpp::ChunkPtr chkptr) {
-      msg_binary_cb((void *) chkptr.get()->Data());
-    };
-    dc->SetOnBinaryMsgCallback(msg_binary_callback);
-  }
-
-  void _SetOnClosedCallback(DataChannel *dc, on_close close_cb) {
-    std::function<void()> close_callback = [close_cb]() {
-      close_cb();
-    };
-    dc->SetOnClosedCallback(close_callback);
-  }
-
-  void _SetOnErrorCallback(DataChannel *dc, on_error error_cb) {
-    std::function<void(std::string description)> error_callback = [error_cb](std::string description) {
-      error_cb(description.c_str());
-    };
-    dc->SetOnErrorCallback(error_callback);
   }
 }
