@@ -6,7 +6,7 @@ project(librtcdcpp
 
 option(DISABLE_SPDLOG "Disable Spdlog")
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MACOSX_RPATH 1)
 
 SET(CMAKE_C_COMPILER /usr/bin/gcc)
@@ -31,7 +31,9 @@ set(LIB_HEADERS
         include/rtcdcpp/PeerConnection.hpp
         include/rtcdcpp/RTCCertificate.hpp
         include/rtcdcpp/SCTPWrapper.hpp
-        include/rtcdcpp/librtcdcpp.h)
+        src/callbacks.pb.h
+        include/rtcdcpp/librtcdcpp.h
+        include/rtcdcpp/cb_event_loop.hpp)
 
 set(LIB_SOURCES
         src/DataChannel.cpp
@@ -41,7 +43,9 @@ set(LIB_SOURCES
         src/PeerConnection.cpp
         src/RTCCertificate.cpp
         src/SCTPWrapper.cpp
-        src/librtcdcpp.cpp)
+        src/cb_event_loop.cpp
+        src/librtcdcpp.cpp
+        src/callbacks.pb.cc)
 
 add_library(rtcdcpp SHARED
         ${LIB_HEADERS}
@@ -62,6 +66,7 @@ target_include_directories(rtcdcpp
 target_link_libraries(rtcdcpp
         PUBLIC
         zmq
+        protobuf
         LibNice::LibNice
         SctpLab::UsrSCTP
         OpenSSL::SSL
