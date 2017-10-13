@@ -126,7 +126,7 @@ extern "C" {
       std::string ice_pwd_string (config_c.ice_pwd);
       config.ice_pwd = ice_pwd_string;
     }
-    //TODO: Fix this.
+    //TODO: Check this later. Doesn't seem to break any use-cases I'm aware of.
     /*
        rtcdcpp::RTCCertificate *rtc_cert;
        rtc_cert = (rtcdcpp::RTCCertificate*) malloc(sizeof(rtcdcpp::RTCCertificate));
