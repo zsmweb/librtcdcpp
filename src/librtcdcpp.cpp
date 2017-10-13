@@ -435,7 +435,16 @@ extern "C" {
     char tmp_path[30];
     sleep(1); // During onClose, to let the other peer reach this stage. (This is supposed to be parent context)
     snprintf(tmp_path, sizeof(tmp_path), "/tmp/librtcdcpp%d", getpid());
-    remove(tmp_path);
+    //printf("\nRemoving %s\n", tmp_path);
+    if (remove(tmp_path) == -1) {
+      printf("\nRemoving %s error: %s\n", tmp_path, strerror(errno));
+    }
+    snprintf(tmp_path, sizeof(tmp_path), "/tmp/librtcdcpp%d-cb", getpid());
+    //printf("\nRemoving %s\n", tmp_path);
+    if (remove(tmp_path) == -1) {
+      printf("\nRemoving %s error: %s\n", tmp_path, strerror(errno));
+    }
+    kill(pid, SIGTERM); //stop child process
     exit(ret);
   }
 
