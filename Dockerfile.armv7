@@ -33,6 +33,8 @@ RUN apk add zeromq-dev
 RUN apk add libzmq
 RUN pip3 install --upgrade pip setuptools
 RUN pip3 install cffi
+RUN pip3 install matplotlib
+RUN pip3 install numpy
 ADD ./ /psl-librtcdcpp
 RUN cd /psl-librtcdcpp/usrsctp/ && sh ./bootstrap && ./configure 
 WORKDIR /psl-librtcdcpp
