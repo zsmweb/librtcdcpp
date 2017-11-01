@@ -33,7 +33,7 @@ gchar* getlines() {
   return lines;
 }
 
-void stress1(DataChannel *dc) {
+void stress1(void *socket) {
   int i = 1;
   int count = 0;
   int max_count = 2000;
@@ -55,7 +55,7 @@ void stress1(DataChannel *dc) {
   test_str[i] = '\0';
   while (count < max_count) {
     count += 1;
-    if (_SendString(dc, test_str) == 0) {
+    if (SendString(socket, test_str) == 0) {
       printf("\n BROKE at count: %d\n", count);
       count--;
       break;
@@ -91,13 +91,13 @@ void stress1(DataChannel *dc) {
   close_wait = 1;
   printf("\nWaiting %d seconds before closing DC.\n", close_wait);
   usleep(close_wait * 1000000); //5s
-  _closeDataChannel(dc);
+  closeDataChannel(socket);
 }
 
-void run_stress_test(DataChannel* dc) {
+void run_stress_test(void *socket) {
   printf("\nRunning stress tests\n");
   pthread_t t1;
-  pthread_create(&t1, NULL, (void *)&stress1, dc);
+  pthread_create(&t1, NULL, (void *)&stress1, socket);
   pthread_detach(t1);
 }
 
@@ -127,35 +127,56 @@ int main() {
   rtc_conf1.ice_servers = ice_servers1;
 
 
-  void onIceCallback(struct IceCandidate_C ice_cand) { }
+  void onIceCallback(struct IceCandidate_C ice_cand) { 
+  }
 
   struct DataChannel* dc;
 
+  cb_event_loop* cb_loop;
+  cb_loop = init_cb_event_loop();
+
   void custom_close1() {
     printf("\nCLOSE1 %d\n", getpid());
-    exitter(0);
+    //exitter(0);
   }
-  void onDCCallback(struct DataChannel* dc, void *socket) {
-    printf("\n=sock1===Got datachannel!=======\n", getpid());
 
-    _SetOnClosedCallback(dc, custom_close1);
+  void onStringMsg1(const char* message) {
+    /*printf("\nMSG1: %s\n", message);*/
   }
+  void onDCCallback(int pid, void *socket, cb_event_loop* cb_loop) {
+    printf("\n=sock1===Got datachannel!=======%d\n", getpid());
+    //printf("\nCB loop process: %p\n", cb_loop);
+    //SetOnClosedCallback(pid, cb_loop, custom_close1);
+    SetOnStringMsgCallback(pid, cb_loop, onStringMsg1);
+  }
+
   void custom_close2() {
     printf("\nCLOSE2 %d\n", getpid());
-    exitter(0);
+    //exitter(0); //No need to call it here now. child will die after it transmits callback to parent
   }
 
-  void onDCCallback1(struct DataChannel* dc, void* socket) {
-    printf("\n=sock2===Got datachannel!=======\n", getpid());
-
-    _SetOnClosedCallback(dc, custom_close2);
-    run_stress_test(dc); // spawns a thread as nothing should block in callbacks
+  void onStringMsg2(const char* message) {
+    /*printf("\nMSG2: %s\n", message);*/
+  }
+  void onDCCallback1(int pid, void* socket, cb_event_loop* cb_loop) {
+    printf("\n=sock2===Got datachannel!=======%d\n", getpid());
+    //printf("\nCB loop process: %p\n", cb_loop);
+    //SetOnClosedCallback(pid, cb_loop, custom_close2);
+    SetOnStringMsgCallback(pid, cb_loop, onStringMsg2);
+    run_stress_test(socket); // spawns a thread as nothing should block in callbacks
   }
   void* sock1;
   void* sock2;
 
-  sock1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback);
-  sock2 = newPeerConnection(rtc_conf1, onIceCallback, onDCCallback1);
+  
+
+  pc_info pc_info_ret1, pc_info_ret2;
+  pc_info_ret1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback, cb_loop);
+  pc_info_ret2 = newPeerConnection(rtc_conf1, onIceCallback, onDCCallback, cb_loop);
+
+  sock1 = pc_info_ret1.socket;
+  sock2 = pc_info_ret2.socket;
+
   ParseOffer(sock1, ""); //trigger ICE
   ParseOffer(sock2, ""); // ""
 
@@ -167,8 +188,10 @@ int main() {
 
     char* offer = GenerateOffer(sock1);
     ParseOffer(sock2, offer);
+    free(offer);
     char* answer = GenerateAnswer(sock2);
     ParseOffer(sock1, answer);
+    free(answer);
     break;
   }
   processWait();
