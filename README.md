@@ -16,6 +16,8 @@ From project root,
 
 * Run the centrifugo real-time messaging server container: `docker run --ulimit nofile=65536:65536 -v ./:/centrifugo -p 8000:8000 centrifugo/centrifugo centrifugo -c cent_config.json`
 
+* Set env var `CENTRIFUGO_SERVER` to hostname:ip of the server started from above. (else it will use the default "localhost:8000")
+
 * Install dependencies: `pip3 install cent centrifuge-python`
 
 * Run `python3 python/peer.py` on the nodes (Python 3.5+ needed). Peer.py assigns a random UUID and you can 'call' any other peer just by typing in their UUID.
