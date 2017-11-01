@@ -106,11 +106,11 @@ void SetOnBinaryMsgCallback(void *socket, on_binary_msg msg_binary_cb);
 void SetOnClosedCallback(int pid, cb_event_loop* cb_event_loop, on_close close_cb);
 void SetOnErrorCallback(void *socket, DataChannel *dc, on_error error_cb);
 
-void _SetOnOpen(DataChannel *dc, open_cb on_open_cb);
-void _SetOnStringMsgCallback(DataChannel *dc, on_string_msg recv_str_cb);
-void _SetOnBinaryMsgCallback(DataChannel *dc, on_binary_msg msg_binary_cb);
-void _SetOnClosedCallback(DataChannel *dc, on_close close_cb);
-void _SetOnErrorCallback(DataChannel *dc, on_error error_cb);
+//void _SetOnOpen(DataChannel *dc, open_cb on_open_cb);
+//void _SetOnStringMsgCallback(DataChannel *dc, on_string_msg recv_str_cb);
+//void _SetOnBinaryMsgCallback(DataChannel *dc, on_binary_msg msg_binary_cb);
+//void _SetOnClosedCallback(DataChannel *dc, on_close close_cb);
+//void _SetOnErrorCallback(DataChannel *dc, on_error error_cb);
 
 void processWait();
 void exitter(pid_t pid, int ret);
