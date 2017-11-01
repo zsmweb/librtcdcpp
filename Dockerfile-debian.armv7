@@ -21,6 +21,7 @@ RUN pip3 install --upgrade pip setuptools
 RUN pip3 install cffi
 RUN pip3 install matplotlib
 RUN pip3 install numpy
+RUN pip3 install cent centrifugo-python
 ADD ./ /psl-librtcdcpp
 RUN cd /psl-librtcdcpp/usrsctp/ && sh ./bootstrap && ./configure 
 WORKDIR /psl-librtcdcpp
