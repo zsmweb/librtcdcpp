@@ -19,9 +19,10 @@ After a clone, do:
 Note: Each time the library is made to create new 'peers', an IPC socket file will be created which has the path "/tmp/librtcdcpp{pid}". If not closed properly, these files will be left back.
 Do `rm /tmp/librtcdcpp*` to make sure the inodes don't get full.
 
-Stress test results on AMD A8 7410 with the ZMQ/protocol buffers fixes-:
+Stress test [results](https://github.com/hamon-in/librtcdcpp/wiki/Performance-evaluation-(AMD-A8-7410-CPU)#python-concurrent-test-protobuf--zmq) on AMD A8 7410 with the ZMQ/protocol buffers fixes-:
 
 ![](http://image.ibb.co/m3j2qm/AMD_librtcdcpp.png)
+_\*concurrent test was done with 2 peers at a time with the same packet size for each packet size._
 
 ### Signalling server
 
