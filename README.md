@@ -9,3 +9,13 @@ After a clone, do:
 
 Note: Each time the library is made to create new 'peers', an IPC socket file will be created which has the path "/tmp/librtcdcpp{pid}". If not closed properly, these files will be left back.
 Do `rm /tmp/librtcdcpp*` to make sure the inodes don't get full.
+
+## Signalling server
+
+From project root, 
+
+* Run the centrifugo real-time messaging server container: `docker run --ulimit nofile=65536:65536 -v ./:/centrifugo -p 8000:8000 centrifugo/centrifugo centrifugo -c cent_config.json`
+
+* Install dependencies: `pip3 install cent centrifuge-python`
+
+* Run `python3 python/peer.py` on the nodes (Python 3.5+ needed). Peer.py assigns a random UUID and you can 'call' any other peer just by typing in their UUID.
