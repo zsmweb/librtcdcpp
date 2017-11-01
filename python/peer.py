@@ -9,8 +9,9 @@ import time
 from time import sleep
 from pyrtcdcpp import RTCConf, PeerConnection, processWait, exitter, init_cb_event_loop
 import asyncio
+import os
 
-url = "http://localhost:8000"
+signalling_server = os.getenv('CENTRIFUGO_SERVER', "localhost:8000")
 secret_key = "secret" # or use --insecure_api ?
 
 class InvalidUUID(Exception):
@@ -36,6 +37,8 @@ class Peer(PeerConnection):
     def onClose(self):
         print("DC Closed")
 
+url = "http://" + signalling_server
+
 async def run(evt_loop, user):
     global peer
     global dc
@@ -48,7 +51,7 @@ async def run(evt_loop, user):
     cent_client = Client(url, secret_key, timeout=1) # Cent
 
     credentials = Credentials(user, timestamp, info, token)
-    address = "ws://localhost:8000/connection/websocket"
+    address = "ws://" + signalling_server + "/connection/websocket"
     
     async def connection_handler(**kwargs):
         print("Connected", kwargs)
