@@ -63,7 +63,7 @@ class graph():
             autolabel(rect2, ax)
         autolabel(rect1, ax)
         ax.set_ylabel('MB/s')
-        ax.set_xlabel('Individual packet size')
+        ax.set_xlabel('Individual packet size (in KBs)')
         ax.set_xticks(ind)
         ax.set_xticklabels([speed[0] for speed in self.speed_for_packet])
         ax.legend()
