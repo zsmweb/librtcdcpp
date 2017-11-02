@@ -38,6 +38,6 @@ Go inside the debian container created from the quick start step above and do th
 
 * Set env var `CENTRIFUGO_SERVER` to hostname:ip of the server started from above. (else it will use the default "localhost:8000")
 
-* Do `export LD_LIBRARY_PATH=./` to let the client be aware of the `librtcdcpp.so` shared object that will be made in the project root.
+* Do `export LD_LIBRARY_PATH=./` to let the client be aware of the `librtcdcpp.so` shared object that will be made in the project root. Modify as necessary depending on where you are, and relative to the where you have the .so file.
 
 * Run `python3 python/peer.py` on the nodes (Python 3.5+ needed). Peer.py assigns a random UUID and you can 'call' any other peer just by typing in their UUID
