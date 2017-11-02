@@ -1,4 +1,5 @@
 protoc -I=./ --cpp_out=./src/ ./callbacks.proto && \
+cp ./src/callbacks.pb.h ./include/rtcdcpp/ && \
 cd ./usrsctp/usrsctplib/ && make && \
 cd ../../ && \
 cd examples/websocket_client/cpslib/ && \
