@@ -7,3 +7,6 @@
 [submodule "examples/websocket_client/cpslib"]
   path = examples/websocket_client/cpslib
 	url = https://github.com/hamon-in/cpslib
+[submodule "python/centrifuge-python"]
+	path = python/centrifuge-python
+	url = https://github.com/centrifugal/centrifuge-python
