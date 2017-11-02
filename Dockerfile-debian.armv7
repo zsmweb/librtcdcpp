@@ -22,8 +22,9 @@ RUN pip3 install cffi
 RUN apt-get -y install libfreetype6-dev libpng-dev
 RUN pip3 install matplotlib
 RUN pip3 install numpy
-RUN pip3 install cent centrifugo-python
+RUN pip3 install cent
 ADD ./ /psl-librtcdcpp
+RUN cd /psl-librtcdcpp/python/centrifuge-python && pip3 install -r requirements.txt && python3 setup.py install
 RUN cd /psl-librtcdcpp/usrsctp/ && sh ./bootstrap && ./configure 
 WORKDIR /psl-librtcdcpp
 
