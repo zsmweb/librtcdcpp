@@ -40,4 +40,6 @@ Go inside the debian container created from the quick start step above and do th
 
 #### Note
 
-Make sure that the containers that hold the client *and* centrifugo server are configured for proper [networking](https://docs.docker.com/engine/userguide/networking/). You can set `--network=host` to let the containers use the host network's stack for easier networking. Otherwise it'll use the default docker bridge network.
+* :warning: Make sure that the containers that hold the client *and* centrifugo server are configured for proper [networking](https://docs.docker.com/engine/userguide/networking/). You can set `--network=host` to let the containers use the host network's stack for easier networking. Otherwise it'll use the default docker bridge network.
+
+* :warning: It may take several couple of hours to build the ARMv7 container, especially if it has matplotlib, numpy and its dependencies. Comment out [those lines](https://github.com/hamon-in/librtcdcpp/blob/8b8f373c828078c985824b45876b40c5b6648fcc/Dockerfile-debian.armv7#L22-#L24) and build the container. The resulting container won't be able to run `stress_test.py` at the moment but can run the signalling client `peer.py`.
