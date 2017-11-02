@@ -1,4 +1,4 @@
-FROM resin/raspberry-pi2-debian:stretch
+FROM resin/armv7hf-debian:sid
 
 RUN apt-get -y update
 RUN apt-get -y dist-upgrade
