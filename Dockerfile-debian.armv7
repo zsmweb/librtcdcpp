@@ -29,3 +29,4 @@ RUN cd /psl-librtcdcpp/python/centrifuge-python && pip3 install -r requirements.
 RUN cd /psl-librtcdcpp/usrsctp/ && sh ./bootstrap && ./configure 
 WORKDIR /psl-librtcdcpp
 RUN cd /psl-librtcdcpp && cd ./python/ && ./build.sh
+ENV LD_LIBRARY_PATH=./
