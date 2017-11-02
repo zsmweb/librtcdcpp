@@ -8,7 +8,9 @@ After a clone, do:
 
 * `git submodule init && git submodule update`
 * `docker build -f Dockerfile-debian.armv7 -t librtcdcpp .` for ARMv7
+> :warning: It may take several couple of hours to build the ARMv7 container, especially if it has matplotlib, numpy and its dependencies. Comment out [those lines](https://github.com/hamon-in/librtcdcpp/blob/8b8f373c828078c985824b45876b40c5b6648fcc/Dockerfile-debian.armv7#L22-#L24) to build a more lightweight container. The resulting container may not be able to run `stress_test.py`, but should be able to run the signalling client `peer.py`.
 * `docker run -it librtcdcpp:latest`
+> :warning: Make sure that the containers that hold the client *and* centrifugo server are configured for proper [networking](https://docs.docker.com/engine/userguide/networking/). You can set `--network=host` to let the containers use the host network's stack for easier networking. Otherwise it'll use the default docker bridge network.
 
 ### Stress test
 
@@ -16,8 +18,8 @@ After a clone, do:
 * `export LD_LIBRARY_PATH=../` (Since our built .so file will be in project root)
 * Run the stress test script. See help: `python3 stress-test.py --help`
 
-Note: Each time the library is made to create new 'peers', an IPC socket file will be created which has the path "/tmp/librtcdcpp{pid}". If not closed properly, these files will be left back.
-Do `rm /tmp/librtcdcpp*` to make sure the inodes don't get full.
+> :recycle: Note: Each time the library is made to create new 'peers', an IPC socket file will be created which has the path "/tmp/librtcdcpp{pid}". If not closed properly, these files will be left back.
+Do check for `/tmp/librtcdcpp*` files and `rm /tmp/librtcdcpp*` to make sure the inodes don't get full.
 
 Stress test [results](https://github.com/hamon-in/librtcdcpp/wiki/Performance-evaluation-(AMD-A8-7410-CPU)#python-concurrent-test-protobuf--zmq) on AMD A8 7410 with the ZMQ/protocol buffers fixes-:
 
@@ -37,9 +39,3 @@ Go inside the debian container created from the quick start step above and do th
 * Set env var `CENTRIFUGO_SERVER` to hostname:ip of the server started from above. (else it will use the default "localhost:8000")
 
 * Run `python3 python/peer.py` on the nodes (Python 3.5+ needed). Peer.py assigns a random UUID and you can 'call' any other peer just by typing in their UUID
-
-#### Note
-
-* :warning: Make sure that the containers that hold the client *and* centrifugo server are configured for proper [networking](https://docs.docker.com/engine/userguide/networking/). You can set `--network=host` to let the containers use the host network's stack for easier networking. Otherwise it'll use the default docker bridge network.
-
-* :warning: It may take several couple of hours to build the ARMv7 container, especially if it has matplotlib, numpy and its dependencies. Comment out [those lines](https://github.com/hamon-in/librtcdcpp/blob/8b8f373c828078c985824b45876b40c5b6648fcc/Dockerfile-debian.armv7#L22-#L24) and build the container. The resulting container won't be able to run `stress_test.py` at the moment but can run the signalling client `peer.py`.
