@@ -1,4 +1,4 @@
-FROM resin/armv7hf-debian:sid
+FROM arm32v7/debian:sid-slim
 
 RUN apt-get -y update
 RUN apt-get -y dist-upgrade
@@ -23,10 +23,9 @@ RUN apt-get -y install libfreetype6-dev libpng-dev
 RUN pip3 install matplotlib
 RUN pip3 install numpy
 RUN pip3 install cent
-RUN apt-get -y install protobuf-compiler
+RUN apt-get -y install protobuf-compiler libprotobuf-dev
 ADD ./ /psl-librtcdcpp
 RUN cd /psl-librtcdcpp/python/centrifuge-python && pip3 install -r requirements.txt && python3 setup.py install
 RUN cd /psl-librtcdcpp/usrsctp/ && sh ./bootstrap && ./configure 
 WORKDIR /psl-librtcdcpp
-
 RUN cd /psl-librtcdcpp && cd ./python/ && ./build.sh
