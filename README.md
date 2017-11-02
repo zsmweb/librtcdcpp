@@ -36,4 +36,8 @@ Go inside the debian container created from the quick start step above and do th
 
 * Set env var `CENTRIFUGO_SERVER` to hostname:ip of the server started from above. (else it will use the default "localhost:8000")
 
-* Run `python3 python/peer.py` on the nodes (Python 3.5+ needed). Peer.py assigns a random UUID and you can 'call' any other peer just by typing in their UUID.
+* Run `python3 python/peer.py` on the nodes (Python 3.5+ needed). Peer.py assigns a random UUID and you can 'call' any other peer just by typing in their UUID
+
+#### Note
+
+Make sure that the containers that hold the client *and* centrifugo server are configured for proper [networking](https://docs.docker.com/engine/userguide/networking/). You can set `--network=host` to let the containers use the host network's stack for easier networking. Otherwise it'll use the default docker bridge network.
