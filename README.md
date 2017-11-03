@@ -14,6 +14,8 @@ After a clone, do:
 
 ### Stress test
 
+Running the stress test script without arguments will run a series of tests, first of which is a sequential test for each packet sizes of 2, 4, 8 ... 64. Secondly, it will do a concurrent test (2 peers at a time) for each of those packet sizes. At the end of this, it will plot a graph using matplotlib.
+
 * Inside the container, `cd python/` and `./build.sh`
 * `export LD_LIBRARY_PATH=../` (Since our built .so file will be in project root)
 * Run the stress test script. See help: `python3 stress-test.py --help`
