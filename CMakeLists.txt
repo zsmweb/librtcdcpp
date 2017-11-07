@@ -9,6 +9,8 @@ option(DISABLE_SPDLOG "Disable Spdlog")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MACOSX_RPATH 1)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 SET(CMAKE_C_COMPILER /usr/bin/gcc)
 
 # Custom CMake modules
@@ -47,7 +49,7 @@ set(LIB_SOURCES
         src/librtcdcpp.cpp
         src/callbacks.pb.cc)
 
-add_library(rtcdcpp SHARED
+add_library(rtcdcpp STATIC
         ${LIB_HEADERS}
         ${LIB_SOURCES})
 
