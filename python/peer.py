@@ -1,5 +1,6 @@
 from cent import Client, generate_token
 
+import signal
 from centrifuge import Client as clientpy
 from centrifuge import Credentials
 import sys
@@ -20,6 +21,9 @@ class InvalidUUID(Exception):
 global state
 state = 0 # Denotes "DC connected" state
 
+global dc
+dc = None
+
 class Peer(PeerConnection):
     def onCandidate(self, ice):
         pass # We don't want trickle ICE now
@@ -36,9 +40,11 @@ class Peer(PeerConnection):
 
     def onClose(self):
         print("DC Closed")
+        os._exit(0)
 
 url = "http://" + signalling_server
-
+global cent_client
+cent_client = Client(url, secret_key, timeout=1) # Cent
 async def run(evt_loop, user):
     global peer
     global dc
@@ -48,7 +54,6 @@ async def run(evt_loop, user):
     info = json.dumps({"client_version": "0.1"})
     token = generate_token(secret_key, user, timestamp, info=info)
 
-    cent_client = Client(url, secret_key, timeout=1) # Cent
 
     credentials = Credentials(user, timestamp, info, token)
     address = "ws://" + signalling_server + "/connection/websocket"
@@ -58,6 +63,10 @@ async def run(evt_loop, user):
 
     async def disconnected_handler(**kwargs):
         print("Disconnected:", kwargs)
+        if dc == None:
+            os._exit(0)
+        else:
+            dc.Close()
 
     async def connect_error_handler(**kwargs):
         print("Error:", kwargs)
@@ -173,6 +182,12 @@ def uuid_input_cb(q):
     asyncio.async(q.put(sys.stdin.readline()))
     
 if __name__ == '__main__':
+    def signal_handler(signal, frame):
+        if dc != None:
+            dc.Close()
+        cent_client.disconnect(user)
+    signal.signal(signal.SIGINT, signal_handler)
+
     evt_loop = init_cb_event_loop()
     user = "psl-" + uuid4().hex[:3]
     q = asyncio.Queue()
