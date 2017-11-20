@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 #include <rtcdcpp/PeerConnection.hpp>
-#include <rtcdcpp/callbacks.pb.h>
+#include <callbacks.pb.h>
 #include <rtcdcpp/librtcdcpp.h>
 #include <rtcdcpp/DataChannel.hpp>
 #include <glib.h>

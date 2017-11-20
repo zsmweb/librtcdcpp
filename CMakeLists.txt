@@ -20,6 +20,16 @@ find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(LibNice REQUIRED)
 find_package(UsrSCTP REQUIRED)
+find_package(Protobuf REQUIRED)
+
+include_directories(${Protobuf_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+set(PROTO_SRCS, "${PROJECT_SOURCE_DIR}/src/")
+set(PROTO_HDRS, "${PROJECT_SOURCE_DIR}/include/rtcdcpp/")
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS callbacks.proto)
+set(ProtobufIncludePath ${CMAKE_CURRENT_BINARY_DIR}
+    CACHE INTERNAL "Path to generated protobuf files.")
 
 set(LIB_HEADERS
         include/rtcdcpp/Chunk.hpp
@@ -31,7 +41,7 @@ set(LIB_HEADERS
         include/rtcdcpp/PeerConnection.hpp
         include/rtcdcpp/RTCCertificate.hpp
         include/rtcdcpp/SCTPWrapper.hpp
-        src/callbacks.pb.h
+        ${CMAKE_BINARY_DIR}/callbacks.pb.h
         include/rtcdcpp/librtcdcpp.h
         include/rtcdcpp/cb_event_loop.hpp)
 
@@ -45,7 +55,7 @@ set(LIB_SOURCES
         src/SCTPWrapper.cpp
         src/cb_event_loop.cpp
         src/librtcdcpp.cpp
-        src/callbacks.pb.cc)
+        ${CMAKE_BINARY_DIR}/callbacks.pb.cc)
 
 add_library(rtcdcpp SHARED
         ${LIB_HEADERS}
@@ -61,7 +71,8 @@ endif ()
 
 target_include_directories(rtcdcpp
         PUBLIC
-        ${PROJECT_SOURCE_DIR}/include)
+        ${PROJECT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(rtcdcpp
         PUBLIC

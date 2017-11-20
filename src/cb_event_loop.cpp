@@ -1,7 +1,7 @@
 #include <rtcdcpp/cb_event_loop.hpp>
 #include <thread>
 #include <zmq.h>
-#include <rtcdcpp/callbacks.pb.h>
+#include <callbacks.pb.h>
 #include <unistd.h>
 #include <iostream>
 #include <errno.h>
