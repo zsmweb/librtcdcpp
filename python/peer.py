@@ -1,7 +1,7 @@
-from cent import Client, generate_token
+from cent import Client, generate_token # Cent.Client for publishing.
 
 import signal
-from centrifuge import Client as clientpy
+from centrifuge import Client as clientpy # Websocket centrifugo client (centrifuge.Client) for subscribing
 from centrifuge import Credentials
 import sys
 from uuid import uuid4
@@ -19,7 +19,7 @@ class InvalidUUID(Exception):
     pass
 
 global state
-state = 0 # Denotes "DC connected" state
+state = 0 # Denotes "DC connected" state. 0 being disconnected and 1 being connected
 
 global dc
 dc = None
