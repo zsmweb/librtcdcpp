@@ -1,4 +1,5 @@
-from pyrtcdcpp import RTCConf, PeerConnection, processWait, exitter, init_cb_event_loop
+from pyrtcdcpp import RTCConf, PeerConnection, \
+    processWait, exitter, init_cb_event_loop
 from pprint import pprint
 from threading import Thread
 from time import sleep, time
@@ -10,10 +11,14 @@ import matplotlib.pyplot as plt
 
 dc_stress_flag = False
 parser = argparse.ArgumentParser()
-parser.add_argument("--size", help="Size in kilobytes of each payload. Default is 32 kB.", default=32, type=int)
-parser.add_argument("--count", help="Number of times each payload gets sent. Default is 2000.", default=100, type=int)
-parser.add_argument("--p2p-pairs", help="Number of p2p connections to make. Default is 2 (4 peers).", default=2, type=int)
+parser.add_argument("--size", help="Size in kilobytes of each payload. \
+        Default is 32 kB.", default=32, type=int)
+parser.add_argument("--count", help="Number of times each payload gets sent. \
+        Default is 2000.", default=100, type=int)
+parser.add_argument("--p2p-pairs", help="Number of p2p connections to make. \
+        Default is 2 (4 peers).", default=2, type=int)
 args = parser.parse_args()
+
 
 def autolabel(rects, ax):
     """
@@ -25,9 +30,11 @@ def autolabel(rects, ax):
                 '%d' % int(height),
                 ha='center', va='bottom')
 
+
 class graph():
-    speed_for_packet = [] # List of (packet size, value)
-    speed_for_packet_concurrent = {} # Same, but under concurrent load
+    speed_for_packet = []  # List of (packet size, value)
+    speed_for_packet_concurrent = {}  # Same, but under concurrent load
+
     def __init__(self):
         pass
 
@@ -42,10 +49,10 @@ class graph():
         speed = round(speed, 2)
         try:
             old_speed = self.speed_for_packet_concurrent[packet_size]
-            self.speed_for_packet_concurrent[packet_size] = (old_speed + speed) / 2
+            self.speed_for_packet_concurrent[packet_size] \
+                = (old_speed + speed) / 2
         except KeyError:
             self.speed_for_packet_concurrent[packet_size] = speed
-        #self.speed_for_packet_concurrent.insert(0, (packet_size, speed))
 
     def plot(self):
         N = len(self.speed_for_packet)
@@ -53,13 +60,16 @@ class graph():
         width = 0.15
         ind = np.arange(N)
         height_1 = [speed[1] for speed in self.speed_for_packet]
-        height_2 = [speed for speed in self.speed_for_packet_concurrent.values()]
+        height_2 = [speed for speed in
+                    self.speed_for_packet_concurrent.values()]
         bottom_1 = [speed[0] for speed in self.speed_for_packet]
-        rect1 = ax.bar(ind, height_1, width=width, color='y', label='Sequential test')
+        rect1 = ax.bar(ind, height_1, width=width,
+                       color='y', label='Sequential test')
         if len(height_2) > 0:
             N = len(self.speed_for_packet_concurrent)
             ind = np.arange(N)
-            rect2 = ax.bar(ind + width, height_2, width=width, color='r', label='Concurrent test')
+            rect2 = ax.bar(ind + width, height_2, width=width, color='r',
+                           label='Concurrent test')
             autolabel(rect2, ax)
         autolabel(rect1, ax)
         ax.set_ylabel('MB/s')
@@ -70,16 +80,8 @@ class graph():
         fig.tight_layout()
         plt.show()
 
-    # def plot_line(self):
-        # y1 = np.linspace(min(self.speed_for_packet), max(self.speed_for_packet))
-        # x1 = np.arange(len(self.speed_for_packet)
-        # plt.plot(x1, y1)
-        # plt.title('Sequential test')
-        # plt.ylabel('MB/s')
-        # plt.xlabel('Packet size in kB')
-        # plt.show()
 
-def handshake_peers(evt_loop, pkt_size, graph_obj, concurrent = False):
+def handshake_peers(evt_loop, pkt_size, graph_obj, concurrent=False):
     pc1 = Peer1(evt_loop)
     pc2 = Peer2(evt_loop)
     pc1.concurrent = concurrent
@@ -89,7 +91,7 @@ def handshake_peers(evt_loop, pkt_size, graph_obj, concurrent = False):
 
     pc1.graph_obj = graph_obj
 
-    pc1.ParseOffer('') # To make offer have ice candidates
+    pc1.ParseOffer('')  # To make offer have ice candidates
     pc2.ParseOffer('')
     offer = pc1.GenerateOffer()
     if offer is not None:
@@ -100,37 +102,41 @@ def handshake_peers(evt_loop, pkt_size, graph_obj, concurrent = False):
     if answer is not None:
         pc1.ParseOffer(answer)
 
+
 global pkt_size
 pkt_size = None
+
+
 def stress(dc, pc_obj):
-   i = 1
-   count = 0
-   global running
-   max_count = args.count
-   byte_count = 0
-   if pc_obj.pkt_size == None:
-       j = args.size # kB
-   else:
-       j = pc_obj.pkt_size
-   i = j * 1024
-   print("===Testing fixed payloads of", j, "kB", max_count, "times===");
-   time_start = time()
-   while (count < max_count):
-       count += 1
-       dc.SendString('A' * i)
-   time_end = time()
-   total_data = (count * j) / 1024 # in MB
-   total_time = time_end - time_start
-   last_payload = {'t': total_time, 'd': total_data, 'jj': j}
-   dc.SendString('EOL' + json.dumps(last_payload))
+    i = 1
+    count = 0
+    global running
+    max_count = args.count
+    byte_count = 0
+    if pc_obj.pkt_size is None:
+        j = args.size  # kB
+    else:
+        j = pc_obj.pkt_size
+    i = j * 1024
+    print("===Testing fixed payloads of", j, "kB", max_count, "times===")
+    time_start = time()
+    while (count < max_count):
+        count += 1
+        dc.SendString('A' * i)
+    time_end = time()
+    total_data = (count * j) / 1024  # in MB
+    total_time = time_end - time_start
+    last_payload = {'t': total_time, 'd': total_data, 'jj': j}
+    dc.SendString('EOL' + json.dumps(last_payload))
+
 
 class Peer1(PeerConnection):
     def onCandidate(self, ice):
-        #print("Python peer1 got candidates: ", ice['candidate'])
-        pass # We don't want trickle ICE now
+        # print("Python peer1 got candidates: ", ice['candidate'])
+        pass  # We don't want trickle ICE now
 
     def onMessage(self, msg):
-        #print("\n[PC1]MESSAGE: " + msg + "\n")
+        # print("\n[PC1]MESSAGE: " + msg + "\n")
         if (msg[:3] == 'EOL'):
             payload = json.loads(msg[3:])
             total_time = payload['t']
@@ -143,7 +149,7 @@ class Peer1(PeerConnection):
                 self.graph_obj.add_concurrent_speed(j, total_data / total_time)
             else:
                 self.graph_obj.add_speed(j, total_data / total_time)
-            self.Close() # dc Close
+            self.Close()  # dc Close
 
     def onChannel(self, dc):
         print("\n=======PC1 Got DC=======\n")
@@ -151,13 +157,14 @@ class Peer1(PeerConnection):
     def onClose(self):
         print("DC1 Closed")
 
+
 class Peer2(PeerConnection):
     def onCandidate(self, ice):
-        #print("Python peer2 got candidates: ", ice['candidate'])
-        pass # We don't want trickle ICE now
+        # print("Python peer2 got candidates: ", ice['candidate'])
+        pass  # We don't want trickle ICE now
 
     def onMessage(self, msg):
-        #print("\n[PC2]MESSAGE: " + msg + "\n")
+        # print("\n[PC2]MESSAGE: " + msg + "\n")
         pass
 
     def onChannel(self, dc):
@@ -167,8 +174,9 @@ class Peer2(PeerConnection):
     def onClose(self):
         print("DC2 Closed")
 
+
 stress_graph = graph()
-evt_loop = init_cb_event_loop() # 1 loop may not be so performant
+evt_loop = init_cb_event_loop()  # 1 loop may not be so performant
 if (len(sys.argv) > 1):
     for i in range(0, args.p2p_pairs):
         handshake_peers(evt_loop, args.size, stress_graph)
@@ -182,7 +190,8 @@ else:
         processWait()
 
     concurrent_count = 2
-    print("#### Stress testing localhost IPC in concurrent pairs ({} at a time with same packet sizes) ####".format(concurrent_count))
+    print("Stress testing localhost IPC in concurrent pairs \
+            ({} at a time with same packet sizes)".format(concurrent_count))
     for packet_size in range(1, 7):
         for con_cnt in range(0, concurrent_count):
             pkt_size = 2 ** packet_size
