@@ -1,35 +1,43 @@
-from cent import Client, generate_token # Cent.Client for publishing.
+from cent import Client, generate_token  # Cent.Client for publishing.
 
 import signal
-from centrifuge import Client as clientpy # Websocket centrifugo client (centrifuge.Client) for subscribing
+
+# Websocket centrifugo client (centrifuge.Client) for subscribing
+from centrifuge import Client as clientpy
+
 from centrifuge import Credentials
 import sys
 from uuid import uuid4
 import json
 import time
 from time import sleep
-from pyrtcdcpp import RTCConf, PeerConnection, processWait, exitter, init_cb_event_loop
+from pyrtcdcpp import RTCConf, PeerConnection, \
+    processWait, exitter, init_cb_event_loop
 import asyncio
 import os
 
 signalling_server = os.getenv('CENTRIFUGO_SERVER', "localhost:8000")
-secret_key = "secret" # or use --insecure_api ?
+secret_key = "secret"  # or use --insecure_api ?
+
 
 class InvalidUUID(Exception):
     pass
 
-global state
-state = 0 # Denotes "DC connected" state. 0 being disconnected and 1 being connected
 
+global state
+
+# Denotes "DC connected" state. 0 being disconnected and 1 being connected
+state = 0
 global dc
 dc = None
 
+
 class Peer(PeerConnection):
     def onCandidate(self, ice):
-        pass # We don't want trickle ICE now
+        pass  # We don't want trickle ICE now
 
     def onMessage(self, msg):
-        print("\nReceived message: " + msg + "\n") 
+        print("\nReceived message: " + msg + "\n")
 
     def onChannel(self, dcn):
         global dc
@@ -42,9 +50,12 @@ class Peer(PeerConnection):
         print("DC Closed")
         os._exit(0)
 
+
 url = "http://" + signalling_server
 global cent_client
-cent_client = Client(url, secret_key, timeout=1) # Cent
+cent_client = Client(url, secret_key, timeout=1)  # Cent
+
+
 async def run(evt_loop, user):
     global peer
     global dc
@@ -54,16 +65,15 @@ async def run(evt_loop, user):
     info = json.dumps({"client_version": "0.1"})
     token = generate_token(secret_key, user, timestamp, info=info)
 
-
     credentials = Credentials(user, timestamp, info, token)
     address = "ws://" + signalling_server + "/connection/websocket"
-    
+
     async def connection_handler(**kwargs):
         print("Connected", kwargs)
 
     async def disconnected_handler(**kwargs):
         print("Disconnected:", kwargs)
-        if dc == None:
+        if dc is None:
             os._exit(0)
         else:
             dc.Close()
@@ -93,13 +103,13 @@ async def run(evt_loop, user):
         if sdp_type == "offer":
             print("Got offer")
             peer = Peer(evt_loop)
-            peer.ParseOffer('') #cand
+            peer.ParseOffer('')  # cand
             peer.ParseOffer(sdp)
             answer = peer.GenerateAnswer()
             payload = {
                 "sdp_cand": answer,
                 "sdp_type": "answer",
-                "from": None # No need for them to contact us anymore
+                "from": None  # No need for them to contact us anymore
             }
             cent_client.publish(from_client, payload)
         elif sdp_type == "answer":
@@ -116,7 +126,7 @@ async def run(evt_loop, user):
         print("Sub error:", kwargs)
 
     sub = await clientpy1.subscribe(
-        user, # The channel is our UUID
+        user,  # The channel is our UUID
         on_message=message_handler,
         on_join=join_handler,
         on_leave=leave_handler,
@@ -124,7 +134,7 @@ async def run(evt_loop, user):
     )
 
     async def input_validation(uinput):
-        uinput = uinput[:-1] # Remove '\n'
+        uinput = uinput[:-1]  # Remove '\n'
         global state
         global peer
 
@@ -135,7 +145,7 @@ async def run(evt_loop, user):
             raise InvalidUUID
         else:
             peer = Peer(evt_loop)
-            peer.ParseOffer('') # gather candidates
+            peer.ParseOffer('')  # gather candidates
             peer.CreateDataChannel("test", evt_loop)
             offer_sdp = peer.GenerateOffer()
             payload = {
@@ -143,7 +153,7 @@ async def run(evt_loop, user):
                 "sdp_type": "offer",
                 "from": user
             }
-            if cent_client.publish(uinput, payload) == None:
+            if cent_client.publish(uinput, payload) is None:
                 pass
             state = 1
             return peer
@@ -174,16 +184,19 @@ async def run(evt_loop, user):
 
     await dc_input_loop()
 
+
 def prompt_user(user):
     print("My ID: ", user)
     print("Enter the ID to call:-")
 
+
 def uuid_input_cb(q):
     asyncio.async(q.put(sys.stdin.readline()))
-    
+
+
 if __name__ == '__main__':
     def signal_handler(signal, frame):
-        if dc != None:
+        if dc is not None:
             dc.Close()
         cent_client.disconnect(user)
     signal.signal(signal.SIGINT, signal_handler)
