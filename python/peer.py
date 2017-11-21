@@ -141,7 +141,7 @@ async def run(evt_loop, user):
         if state == 1:
             return
 
-        if uinput not in cent_client.channels():
+        if uinput not in cent_client.channels() or uinput == user:
             raise InvalidUUID
         else:
             peer = Peer(evt_loop)
