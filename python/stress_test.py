@@ -171,7 +171,7 @@ stress_graph = graph()
 evt_loop = init_cb_event_loop() # 1 loop may not be so performant
 if (len(sys.argv) > 1):
     for i in range(0, args.p2p_pairs):
-        handshake_peers(evt_loop, stress_graph)
+        handshake_peers(evt_loop, args.size, stress_graph)
     processWait()
 else:
     # Run a series of tests and plot em after test finishes
