@@ -65,74 +65,6 @@ async def run(evt_loop, user):
     info = json.dumps({"client_version": "0.1"})
     token = generate_token(secret_key, user, timestamp, info=info)
 
-    credentials = Credentials(user, timestamp, info, token)
-    address = "ws://" + signalling_server + "/connection/websocket"
-
-    async def connection_handler(**kwargs):
-        print("Connected", kwargs)
-
-    async def disconnected_handler(**kwargs):
-        print("Disconnected:", kwargs)
-        if dc is None:
-            os._exit(0)
-        else:
-            dc.Close()
-
-    async def connect_error_handler(**kwargs):
-        print("Error:", kwargs)
-
-    clientpy1 = clientpy(
-        address, credentials,
-        on_connect=connection_handler,
-        on_disconnect=disconnected_handler,
-        on_error=connect_error_handler
-    )
-
-    await clientpy1.connect()
-
-    async def message_handler(**kwargs):
-        rsc = kwargs['data']
-        global peer
-        try:
-            sdp = rsc['sdp_cand']
-            sdp_type = rsc['sdp_type']
-            from_client = rsc['from']
-        except KeyError:
-            print("key error")
-            return
-        if sdp_type == "offer":
-            print("Got offer")
-            peer = Peer(evt_loop)
-            peer.ParseOffer('')  # cand
-            peer.ParseOffer(sdp)
-            answer = peer.GenerateAnswer()
-            payload = {
-                "sdp_cand": answer,
-                "sdp_type": "answer",
-                "from": None  # No need for them to contact us anymore
-            }
-            cent_client.publish(from_client, payload)
-        elif sdp_type == "answer":
-            peer.ParseOffer(sdp)
-            print("Answer parsed")
-
-    async def join_handler(**kwargs):
-        print("Join:", kwargs)
-
-    async def leave_handler(**kwargs):
-        print("Leave:", kwargs)
-
-    async def error_handler(**kwargs):
-        print("Sub error:", kwargs)
-
-    sub = await clientpy1.subscribe(
-        user,  # The channel is our UUID
-        on_message=message_handler,
-        on_join=join_handler,
-        on_leave=leave_handler,
-        on_error=error_handler
-    )
-
     async def input_validation(uinput):
         uinput = uinput[:-1]  # Remove '\n'
         global state
@@ -170,6 +102,43 @@ async def run(evt_loop, user):
                 peer = await input_validation(user_input)
             except InvalidUUID:
                 print("\nInvalid UUID!")
+    credentials = Credentials(user, timestamp, info, token)
+    address = "ws://" + signalling_server + "/connection/websocket"
+
+    async def message_handler(**kwargs):
+        rsc = kwargs['data']
+        global peer
+        try:
+            sdp = rsc['sdp_cand']
+            sdp_type = rsc['sdp_type']
+            from_client = rsc['from']
+        except KeyError:
+            print("key error")
+            return
+        if sdp_type == "offer":
+            print("Got offer")
+            peer = Peer(evt_loop)
+            peer.ParseOffer('')  # cand
+            peer.ParseOffer(sdp)
+            answer = peer.GenerateAnswer()
+            payload = {
+                "sdp_cand": answer,
+                "sdp_type": "answer",
+                "from": None  # No need for them to contact us anymore
+            }
+            cent_client.publish(from_client, payload)
+        elif sdp_type == "answer":
+            peer.ParseOffer(sdp)
+            print("Answer parsed")
+
+    async def join_handler(**kwargs):
+        print("Join:", kwargs)
+
+    async def leave_handler(**kwargs):
+        print("Leave:", kwargs)
+
+    async def error_handler(**kwargs):
+        print("Sub error:", kwargs)
 
     async def dc_input_loop():
         # TODO: Clear queue?
@@ -180,9 +149,38 @@ async def run(evt_loop, user):
             dc.SendString(user_input)
         pass
 
-    await uuid_input_loop(peer)
+    async def connection_handler(**kwargs):
+        os.system('clear')
+        print("Connected", kwargs)
+        sub = await clientpy1.subscribe(
+            user,  # The channel is our UUID
+            on_message=message_handler,
+            on_join=join_handler,
+            on_leave=leave_handler,
+            on_error=error_handler
+        )
+        await uuid_input_loop(peer)
+        await dc_input_loop()
 
-    await dc_input_loop()
+    async def disconnected_handler(**kwargs):
+        print("Disconnected:", kwargs)
+        if dc is None:
+            os._exit(0)
+        else:
+            dc.Close()
+
+    async def connect_error_handler(**kwargs):
+        print("Error:", kwargs)
+
+    clientpy1 = clientpy(
+        address, credentials,
+        on_connect=connection_handler,
+        on_disconnect=disconnected_handler,
+        on_error=connect_error_handler
+    )
+
+    print("Connecting to centrifugo signalling server...")
+    await clientpy1.connect()
 
 
 def prompt_user(user):
