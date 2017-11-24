@@ -1,19 +1,20 @@
 from libpyrtcdcpp import ffi, lib
 from typing import List, Callable
 
+
 class DataChannel():
     def __init__(self, dc, pc, cb_loop):
-        self.dc = dc # This is pid now
+        self.dc = dc  # This is pid now
         self.pc = pc
         self.cb_loop = cb_loop
 
-    def SendString(self, msg:str):
+    def SendString(self, msg: str):
         if len(msg) > 0:
             msg = ffi.new("char[]", bytes(msg, 'utf-8'))
             lib.SendString(self.pc, msg)
 
-    def SendBinary(self, msg:bytes):
-        msg = ffi.new("u_int_8_t", msg) 
+    def SendBinary(self, msg: bytes):
+        msg = ffi.new("u_int_8_t", msg)
         lib.SendBinary(self.pc, msg, len(msg))
 
     def SetOnOpen(self, on_open):
@@ -26,7 +27,7 @@ class DataChannel():
         @ffi.def_extern()
         def onBinaryMsg(msg):
             if on_binary is not None:
-                on_binary(msg) #
+                on_binary(msg)
         lib.SetOnBinaryMsgCallback(self.pc, lib.onBinaryMsg)
 
     def SetOnClosedCallback(self, on_closed):
@@ -40,12 +41,12 @@ class DataChannel():
         lib.SetOnErrorCallback(self.pc, lib.onError)
 
     def Close(self):
-        lib.closeDataChannel(self.pc);
+        lib.closeDataChannel(self.pc)
 
     def getStreamID(self) -> int:
         return lib.getDataChannelStreamID(self.pc)
 
-    #u_int8_t getDataChannelType(DataChannel *dc); # TODO
+    # u_int8_t getDataChannelType(DataChannel *dc); # TODO
 
     def getLabel(self) -> str:
         return ffi.string(lib.getDataChannelLabel(self.pc)).decode('utf-8')
@@ -54,11 +55,15 @@ class DataChannel():
         return ffi.string(lib.getDataChannelProtocol(self.pc)).decode('utf-8')
 
 # This can be a dict instead of a class
+
+
 class RTCConf():
-    def __init__(self, ice_servers: List[tuple], ice_ufrag:str = None, ice_pwd:str = None):
+    def __init__(self, ice_servers: List[tuple],
+                 ice_ufrag: str = None, ice_pwd: str = None):
         self._ice_servers = ice_servers
         self._ice_ufrag = ice_ufrag
         self._ice_pwd = ice_pwd
+
 
 class PeerConnection():
     # Methods that could be overridden.
@@ -92,27 +97,29 @@ class PeerConnection():
         channel.SetOnClosedCallback(self.onClose)
         channel.SetOnStringMsgCallback(self.onMessage)
         # TODO: Implement OnBinary
-        #channel.SetOnBinaryMsgCallback(self.onMessage)
+        # channel.SetOnBinaryMsgCallback(self.onMessage)
         self.onChannel(channel)
 
-    def __init__(self, cb_evt_loop, rtc_conf:RTCConf = None, onIceCallback_p = None, onDCCallback_p = None):
+    def __init__(self, cb_evt_loop, rtc_conf: RTCConf = None,
+                 onIceCallback_p=None, onDCCallback_p=None):
         if rtc_conf is None:
-            rtc_conf = RTCConf([("stun3.l.google.com", 19302)]) # Hardcoded default config/setting for STUN server
+            # Hardcoded default config/setting for STUN server
+            rtc_conf = RTCConf([("stun3.l.google.com", 19302)])
 
         if onIceCallback_p is None:
             onIceCallback_p = self.onCandidate
         if onDCCallback_p is None:
             onDCCallback_p = self._onChannel
-        
-        # Note: These two below aren't 'redefinied'. Take it like one global callback function
-        # that then calls the correct callback.
+
+        # Note: These two below aren't 'redefinied'. Take it like one global
+        # callback function that then calls the correct callback.
 
         @ffi.def_extern()
         def onStringMsg(pid: int, msg):
             callback_fn = cb_evt_loop.get_py_strmsg_cb(pid)
             callback_fn(ffi.string(msg).decode('utf-8'))
 
-        #Same issue with this
+        # Same issue with this
         @ffi.def_extern()
         def onClosed(pid: int):
             callback_fn = cb_evt_loop.get_py_close_cb(pid)
@@ -126,30 +133,35 @@ class PeerConnection():
             ice_struct.hostname = hostname
             ice_struct.port = ice_server[1]
             lib.g_array_append_vals(garray, ice_struct, 1)
-        rtc_conf_s = ffi.new("struct RTCConfiguration_C *") #nm
-        rtc_conf_s.ice_ufrag = ffi.NULL if rtc_conf._ice_ufrag is None else rtc_conf._ice_ufrag
-        rtc_conf_s.ice_pwd = ffi.NULL if rtc_conf._ice_pwd is None else rtc_conf._ice_pwd
+        rtc_conf_s = ffi.new("struct RTCConfiguration_C *")
+        rtc_conf_s.ice_ufrag = ffi.NULL if rtc_conf._ice_ufrag is None \
+            else rtc_conf._ice_ufrag
+        rtc_conf_s.ice_pwd = ffi.NULL if rtc_conf._ice_pwd is None \
+            else rtc_conf._ice_pwd
         rtc_conf_s.ice_servers = garray
 
         # Note: Both onDCCallback and onIceCallback aren't redefined.
-        
+
         @ffi.def_extern()
         def onDCCallback(pid: int, pc, cb_loop):
             argument = DataChannel(pid, pc, cb_loop)
             callback_fn = cb_evt_loop.get_py_dc_cb(pid)
             callback_fn(argument, pc)
-        
+
         @ffi.def_extern()
         def onIceCallback(ice):
             arguments = {}
             pid: int = ice.pid
-            callback_fn = cb_evt_loop.get_py_ice_cb(pid) 
+            callback_fn = cb_evt_loop.get_py_ice_cb(pid)
             arguments["candidate"] = ffi.string(ice.candidate).decode('utf-8')
             arguments["sdpMid"] = ffi.string(ice.sdpMid).decode('utf-8')
             arguments["sdpMLineIndex"] = ice.sdpMLineIndex
             callback_fn(arguments)
 
-        ret_val = lib.newPeerConnection(rtc_conf_s[0], lib.onIceCallback, lib.onDCCallback, cb_evt_loop.get_event_loop())
+        ret_val = lib.newPeerConnection(rtc_conf_s[0], lib.onIceCallback,
+                                        lib.onDCCallback,
+                                        cb_evt_loop.get_event_loop())
+
         cb_evt_loop.add_py_dc_cb(ret_val.pid, onDCCallback_p)
         cb_evt_loop.add_py_ice_cb(ret_val.pid, onIceCallback_p)
         cb_evt_loop.add_py_close_cb(ret_val.pid, self.onClose)
@@ -170,67 +182,80 @@ class PeerConnection():
         else:
             return None
 
-    def ParseOffer(self, offer:str) -> bool:
+    def ParseOffer(self, offer: str) -> bool:
         sdp = ffi.new("char[]", bytes(offer, 'utf-8'))
         if str(self.pc)[16:-1] == '0x1':
-            #print('PC object is null')
+            # print('PC object is null')
             return
         return lib.ParseOffer(self.pc, sdp)
 
-    def CreateDataChannel(self, label:str, cb_loop, protocol:str = None): # CDATA ret
+    def CreateDataChannel(self, label:  str, cb_loop, protocol: str = None):
         if str(self.pc)[16:-1] == '0x1':
-            #print('PC object is null')
+            # print('PC object is null')
             return
-        protocol = ffi.new("char[]", bytes('', 'utf-8')) if protocol is None else ffi.new("char[]", bytes(label, 'utf-8'))
+        protocol = ffi.new("char[]", bytes('', 'utf-8')) if protocol is None \
+            else ffi.new("char[]", bytes(label, 'utf-8'))
         label = ffi.new("char[]", bytes(label, 'utf-8'))
         pid = lib.CreateDataChannel(self.pc, label, protocol)
         dc = DataChannel(pid, self.pc, cb_loop)
         return dc
-    
-    def SetRemoteIceCandidate(self, candidate:str) -> bool:
-        candidate = ffi.new("char[]", bytes(candidate, 'utf-8')) #sm nm
+
+    def SetRemoteIceCandidate(self, candidate:  str) -> bool:
+        candidate = ffi.new("char[]", bytes(candidate, 'utf-8'))
         return lib.SetRemoteIceCandidate(self.pc, candidate)
 
-    def SetRemoteIceCandidates(self, candidate_sdps:List[str]) -> bool:
+    def SetRemoteIceCandidates(self, candidate_sdps: List[str]) -> bool:
         garray = ffi.new("GArray* candidate_sdps")
         for sdp in candidate_sdps:
-            candidate = ffi.new("char[]", bytes(sdp[0], 'utf-8')) #s[
+            candidate = ffi.new("char[]", bytes(sdp[0], 'utf-8'))
             lib.g_array_append_vals(garray, candidate, 1)
-        return lib.SetRemoteIceCandidates(self.pc, garray) #
+        return lib.SetRemoteIceCandidates(self.pc, garray)
 
     def Close(self):
-        lib.closeDataChannel(self.pc);
+        lib.closeDataChannel(self.pc)
+
 
 class init_cb_event_loop():
     def __init__(self):
         self.dc_callbacks = {}
         self.ice_callbacks = {}
         self.close_callbacks = {}
-        self.strmsg_callbacks = {} # h
+        self.strmsg_callbacks = {}
         self.cb_event_loop = None
+
     def get_event_loop(self):
-        if self.cb_event_loop == None:
+        if self.cb_event_loop is None:
             self.cb_event_loop = lib.init_cb_event_loop()
         return self.cb_event_loop
-    def add_py_dc_cb(self, pid:int, callback):
+
+    def add_py_dc_cb(self, pid: int, callback):
         self.dc_callbacks[pid] = callback
-    def add_py_ice_cb(self, pid:int, callback):
+
+    def add_py_ice_cb(self, pid: int, callback):
         self.ice_callbacks[pid] = callback
-    def add_py_close_cb(self, pid:int, callback):
+
+    def add_py_close_cb(self, pid: int, callback):
         self.close_callbacks[pid] = callback
-    def get_py_close_cb(self, pid:int):
+
+    def get_py_close_cb(self, pid: int):
         return self.close_callbacks[pid]
-    def add_py_strmsg_cb(self, pid:int, callback):
+
+    def add_py_strmsg_cb(self, pid: int, callback):
         self.strmsg_callbacks[pid] = callback
-    def get_py_strmsg_cb(self, pid:int):
+
+    def get_py_strmsg_cb(self, pid: int):
         return self.strmsg_callbacks[pid]
-    def get_py_dc_cb(self, pid:int):
+
+    def get_py_dc_cb(self, pid: int):
         return self.dc_callbacks[pid]
-    def get_py_ice_cb(self, pid:int):
+
+    def get_py_ice_cb(self, pid: int):
         return self.ice_callbacks[pid]
+
 
 def processWait():
     lib.processWait()
 
-def exitter(arg:int):
+
+def exitter(arg: int):
     lib.exitter(arg)
