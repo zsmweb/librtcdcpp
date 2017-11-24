@@ -44,8 +44,8 @@ using namespace std;
 
 std::ostream &operator<<(std::ostream &os, const RTCIceServer &ice_server) { return os << ice_server.hostname << ":" << ice_server.port; }
 
-PeerConnection::PeerConnection(const RTCConfiguration &config, IceCandidateCallbackPtr icCB, DataChannelCallbackPtr dcCB, void* socket)
-    : config_(config), ice_candidate_cb(icCB), new_channel_cb(dcCB), socket(socket) {
+PeerConnection::PeerConnection(const RTCConfiguration &config, IceCandidateCallbackPtr icCB, DataChannelCallbackPtr dcCB)
+    : config_(config), ice_candidate_cb(icCB), new_channel_cb(dcCB) {
   if (config_.certificates.empty()) {
     config_.certificates.push_back(RTCCertificate::GenerateCertificate("rtcdcpp", 365));
   }
@@ -262,7 +262,7 @@ void PeerConnection::HandleNewDataChannel(ChunkPtr chunk, uint16_t sid) {
   this->sctp->SetDataChannelSID(sid);
   this->sctp->SendACK();
   if (this->new_channel_cb) {
-    this->new_channel_cb(new_channel, socket);
+    this->new_channel_cb(new_channel);
   } else {
     logger->warn("No new channel callback, ignoring new channel");
   }
@@ -271,7 +271,7 @@ void PeerConnection::HandleNewDataChannel(ChunkPtr chunk, uint16_t sid) {
 void PeerConnection::HandleDataChannelAck(uint16_t sid) {
   auto new_channel = GetChannel(sid);
   if (this->new_channel_cb) {
-    this->new_channel_cb(new_channel, socket);
+    this->new_channel_cb(new_channel);
   } else {
     logger->warn("No new channel callback, ignoring new channel");
   }

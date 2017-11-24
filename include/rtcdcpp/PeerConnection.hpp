@@ -68,9 +68,9 @@ namespace rtcdcpp {
     };
 
     using IceCandidateCallbackPtr = std::function<void(IceCandidate)>;
-    using DataChannelCallbackPtr = std::function<void(std::shared_ptr<DataChannel> channel, void *socket)>;
+    using DataChannelCallbackPtr = std::function<void(std::shared_ptr<DataChannel> channel)>;
 
-    PeerConnection(const RTCConfiguration &config, IceCandidateCallbackPtr icCB, DataChannelCallbackPtr dcCB, void *socket);
+    PeerConnection(const RTCConfiguration &config, IceCandidateCallbackPtr icCB, DataChannelCallbackPtr dcCB);
 
     virtual ~PeerConnection();
 
@@ -135,7 +135,6 @@ namespace rtcdcpp {
     RTCConfiguration config_;
     const IceCandidateCallbackPtr ice_candidate_cb;
     const DataChannelCallbackPtr new_channel_cb;
-    void *socket;
     std::string mid;
 
     enum Role { Client, Server } role = Client;

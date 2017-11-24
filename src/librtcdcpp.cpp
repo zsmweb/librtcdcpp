@@ -151,7 +151,7 @@ extern "C" {
     if (cpid == 0) {
       //child
       DataChannel* child_dc;
-      std::function<void(std::shared_ptr<DataChannel> channel, void* requester)> onDataChannel = [dc_cb, &requester, &child_dc](std::shared_ptr<DataChannel> channel, void* requester) {
+      std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [dc_cb, &child_dc](std::shared_ptr<DataChannel> channel) {
         void *child_to_parent_context = zmq_ctx_new ();
         // TODO: onBinary and onError callbacks (later)
         std::function<void(std::string string1)> onStringMsg = [child_to_parent_context](std::string string1) {
@@ -208,7 +208,7 @@ extern "C" {
       };
 
       PeerConnection* child_pc;
-      child_pc = new rtcdcpp::PeerConnection(config, onLocalIceCandidate, onDataChannel, requester); //Passing requester here is invalid
+      child_pc = new rtcdcpp::PeerConnection(config, onLocalIceCandidate, onDataChannel);
       void *child_context = zmq_ctx_new ();
       void *responder = zmq_socket (child_context, ZMQ_REP);
       char bind_path[30];
