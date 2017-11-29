@@ -379,8 +379,30 @@ void SCTPWrapper::SetDataChannelSID(uint16_t sid)
   {
     this->sid = sid;
   }
-void SCTPWrapper::SendACK() {
+void SCTPWrapper::SendACK(uint8_t chan_type, uint32_t reliability) {
     struct sctp_sndinfo sinfo = {0}; //
+    if (chan_type == DATA_CHANNEL_RELIABLE_UNORDERED ||
+        DATA_CHANNEL_PARTIAL_RELIABLE_REXMIT_UNORDERED ||
+        DATA_CHANNEL_PARTIAL_RELIABLE_TIMED_UNORDERED)
+    {
+      sinfo.snd_flags |= SCTP_UNORDERED;
+    }
+    if (chan_type == DATA_CHANNEL_PARTIAL_RELIABLE_TIMED ||
+        DATA_CHANNEL_PARTIAL_RELIABLE_TIMED_UNORDERED) {
+      struct sctp_rtoinfo rinfo = {0};
+      rinfo.srto_initial = reliability;
+      rinfo.srto_max = reliability;
+      rinfo.srto_min = reliability;
+      if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RTOINFO, &rinfo, sizeof(rinfo)) < 0) {
+        logger->error("Error setting retransmission timeout on socket");
+      } else {
+        logger->info("Successfully set retransmission timeout on socket");
+      }
+    }
+    if (chan_type == DATA_CHANNEL_PARTIAL_RELIABLE_REXMIT_UNORDERED
+        || DATA_CHANNEL_PARTIAL_RELIABLE_REXMIT) {
+      this->reliability = reliability;
+    }
     sinfo.snd_sid = GetSid();
     sinfo.snd_ppid = htonl(PPID_CONTROL); 
     uint8_t payload = DC_TYPE_ACK;
@@ -390,8 +412,13 @@ void SCTPWrapper::SendACK() {
     } else {
       logger->info("Ack has gone through");
     }
+    if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_DEFAULT_SNDINFO, &sinfo, sizeof(sinfo)) < 0) {
+      logger->error("Setting Default SNDINFO failed");
+    } else {
+      logger->info("Default SNDINFO has been set");
+    }
 }
-void SCTPWrapper::CreateDCForSCTP(std::string label, std::string protocol) {
+void SCTPWrapper::CreateDCForSCTP(std::string label, std::string protocol, uint8_t chan_type, uint32_t reliability) {
 
   std::unique_lock<std::mutex> l2(createDCMtx);
   while (!this->readyDataChannel) {
@@ -401,14 +428,40 @@ void SCTPWrapper::CreateDCForSCTP(std::string label, std::string protocol) {
   int sid;
   sid = this->sid;
   sinfo.snd_sid = sid;
-  sinfo.snd_ppid = htonl(PPID_CONTROL); 
+  sinfo.snd_ppid = htonl(PPID_CONTROL);
+  if (chan_type == DATA_CHANNEL_RELIABLE_UNORDERED || DATA_CHANNEL_PARTIAL_RELIABLE_TIMED_UNORDERED
+      || DATA_CHANNEL_PARTIAL_RELIABLE_REXMIT_UNORDERED) {
+    sinfo.snd_flags |= SCTP_UNORDERED;
+  }
+  if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_DEFAULT_SNDINFO, &sinfo, sizeof(sinfo)) < 0) {
+    logger->error("Setting default SNDINFO failed");
+  } else {
+    logger->info("Default SNDINFO has been set");
+  }
+  if (chan_type == DATA_CHANNEL_PARTIAL_RELIABLE_TIMED ||
+      DATA_CHANNEL_PARTIAL_RELIABLE_TIMED_UNORDERED) {
+    struct sctp_rtoinfo rinfo = {0};
+    rinfo.srto_initial = reliability;
+    rinfo.srto_max = reliability;
+    rinfo.srto_min = reliability;
+    if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RTOINFO, &rinfo, sizeof(rinfo)) < 0) {
+      logger->error("Error setting retransmission timeout on socket");
+    } else {
+      logger->info("Successfully set retransmission timeout on socket");
+    }
+  }
+
+  if (chan_type == DATA_CHANNEL_PARTIAL_RELIABLE_REXMIT_UNORDERED ||
+      DATA_CHANNEL_PARTIAL_RELIABLE_REXMIT) {
+    this->reliability = reliability;
+  }
 
   int total_size = sizeof *this->data + label.size() + protocol.size() - (2 * sizeof(char *));
   this->data = (dc_open_msg *)calloc(1, total_size);
   this->data->msg_type = DC_TYPE_OPEN;
-  this->data->chan_type = DATA_CHANNEL_RELIABLE;
+  this->data->chan_type = chan_type;
   this->data->priority = htons(0); // https://tools.ietf.org/html/draft-ietf-rtcweb-data-channel-10#section-6.4
-  this->data->reliability = htonl(0);
+  this->data->reliability = htonl(reliability);
   this->data->label_len = htons(label.length());
   this->data->protocol_len = htons(protocol.length());
   // try to overwrite last two char* from the struct
@@ -444,17 +497,16 @@ void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
   // spa.sendv_prinfo.pr_policy = SCTP_PR_SCTP_RTX;
   // spa.sendv_prinfo.pr_value = 0;
 
-  int tries = 15;
-  while (tries < 3000000) {
+  int tries = 0;
+  while (tries <= this->reliability) {
     if (usrsctp_sendv(this->sock, chunk->Data(), chunk->Length(), NULL, 0, &spa, sizeof(spa), SCTP_SENDV_SPA, 0) < 0) {
       //logger->error("FAILED to send, trying again in {} ms. Retry count: {}", tries, tries);
       std::this_thread::sleep_for(std::chrono::milliseconds(tries));
-      tries += 2;
+      tries += 1;
     } else {
       return;
     }
   }
-  //tried about 5 times and still no luck
   throw std::runtime_error("Send failed");
 }
 

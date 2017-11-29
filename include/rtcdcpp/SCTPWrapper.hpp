@@ -61,8 +61,8 @@ class SCTPWrapper {
   // Handle a decrypted SCTP packet
   void DTLSForSCTP(ChunkPtr chunk);
   
-  void SendACK();
-  void CreateDCForSCTP(std::string label, std::string protocol="");
+  void SendACK(uint8_t chan_type, uint32_t reliability);
+  void CreateDCForSCTP(std::string label, std::string protocol="", uint8_t chan_type = DATA_CHANNEL_RELIABLE, uint32_t reliability = 0);
 
   dc_open_msg *data;
   uint16_t sid;
@@ -81,6 +81,7 @@ class SCTPWrapper {
 
  private:
   //  PeerConnection *peer_connection;
+  uint32_t reliability;
   bool started{false};
   struct socket *sock;
   uint16_t local_port;

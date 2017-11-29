@@ -81,7 +81,7 @@ class DataChannel {
   uint8_t chan_type;
   std::string label;
   std::string protocol;
-
+  uint32_t reliability;
   // TODO: Priority field
 
   std::function<void()> open_cb;
@@ -98,7 +98,7 @@ class DataChannel {
   void OnError(std::string description);
 
  public:
-  DataChannel(PeerConnection *pc, uint16_t stream_id, uint8_t chan_type, std::string label, std::string protocol);
+  DataChannel(PeerConnection *pc, uint16_t stream_id, uint8_t chan_type, std::string label, std::string protocol, uint32_t reliability);
   virtual ~DataChannel();
 
   /**
