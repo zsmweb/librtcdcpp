@@ -3,6 +3,13 @@ from typing import List, Callable
 
 
 class DataChannel():
+    DATA_CHANNEL_RELIABLE = 0x00
+    DATA_CHANNEL_RELIABLE_UNORDERED = 0x80
+    DATA_CHANNEL_PARTIAL_RELIABLE_REXMIT = 0x01
+    DATA_CHANNEL_PARTIAL_RELIABLE_REXMIT_UNORDERED = 0x81
+    DATA_CHANNEL_PARTIAL_RELIABLE_TIMED = 0x02
+    DATA_CHANNEL_PARTIAL_RELIABLE_TIMED_UNORDERED = 0x82
+
     def __init__(self, dc, pc, cb_loop):
         self.dc = dc  # This is pid now
         self.pc = pc
@@ -189,14 +196,19 @@ class PeerConnection():
             return
         return lib.ParseOffer(self.pc, sdp)
 
-    def CreateDataChannel(self, label:  str, cb_loop, protocol: str = None):
+    def CreateDataChannel(self, label:  str, cb_loop, protocol: str = None,
+                          chan_type=DataChannel.DATA_CHANNEL_RELIABLE,
+                          reliability=None):
         if str(self.pc)[16:-1] == '0x1':
             # print('PC object is null')
             return
         protocol = ffi.new("char[]", bytes('', 'utf-8')) if protocol is None \
             else ffi.new("char[]", bytes(label, 'utf-8'))
         label = ffi.new("char[]", bytes(label, 'utf-8'))
-        pid = lib.CreateDataChannel(self.pc, label, protocol)
+        if reliability is None:
+            reliability = 0
+        pid = lib.CreateDataChannel(self.pc, label, protocol, chan_type,
+                                    reliability)
         dc = DataChannel(pid, self.pc, cb_loop)
         return dc
 

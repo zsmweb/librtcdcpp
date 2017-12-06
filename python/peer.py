@@ -78,7 +78,9 @@ async def run(evt_loop, user):
         else:
             peer = Peer(evt_loop)
             peer.ParseOffer('')  # gather candidates
-            peer.CreateDataChannel("test", evt_loop)
+            peer.CreateDataChannel("test", evt_loop,
+                                   DataChannel.DATA_CHANNEL_PARTIAL_
+                                   RELIABLE_REXMIT_UNORDERED, 2000)
             offer_sdp = peer.GenerateOffer()
             payload = {
                 "sdp_cand": offer_sdp,
