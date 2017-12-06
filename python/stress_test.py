@@ -1,5 +1,5 @@
 from pyrtcdcpp import RTCConf, PeerConnection, \
-    processWait, exitter, init_cb_event_loop
+    processWait, exitter, init_cb_event_loop, DataChannel
 from pprint import pprint
 from threading import Thread
 from time import sleep, time
@@ -86,7 +86,8 @@ def handshake_peers(evt_loop, pkt_size, graph_obj, concurrent=False):
     pc2 = Peer2(evt_loop)
     pc1.concurrent = concurrent
     pc2.pkt_size = pkt_size
-    pc1.CreateDataChannel("test", evt_loop)
+    pc1.CreateDataChannel("test", evt_loop, None,
+                          DataChannel.DATA_CHANNEL_RELIABLE, 3000000)
     pc2.graph_obj = graph_obj
 
     pc1.graph_obj = graph_obj

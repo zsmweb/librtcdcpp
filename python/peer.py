@@ -12,7 +12,7 @@ import json
 import time
 from time import sleep
 from pyrtcdcpp import RTCConf, PeerConnection, \
-    processWait, exitter, init_cb_event_loop
+    processWait, exitter, init_cb_event_loop, DataChannel
 import asyncio
 import os
 
@@ -78,7 +78,7 @@ async def run(evt_loop, user):
         else:
             peer = Peer(evt_loop)
             peer.ParseOffer('')  # gather candidates
-            peer.CreateDataChannel("test", evt_loop,
+            peer.CreateDataChannel("test", evt_loop, None,
                                    DataChannel.DATA_CHANNEL_PARTIAL_RELIABLE_REXMIT_UNORDERED, 2000)
             offer_sdp = peer.GenerateOffer()
             payload = {

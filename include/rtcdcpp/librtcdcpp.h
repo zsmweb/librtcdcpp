@@ -14,7 +14,7 @@ typedef struct PeerConnection PeerConnection;
 typedef struct DataChannel DataChannel;
 typedef struct cb_event_loop cb_event_loop;
 #endif
-
+#include <stdint.h>
 #include <stdbool.h>
 #include <glib.h>
 #include <sys/types.h>
