@@ -307,8 +307,14 @@ extern "C" {
             sendSignal(responder); // req proto
             zmq_recv(responder, proto_arg, proto_arg_length, 0);
             (proto_arg)[proto_arg_length] = '\0';
+            sendSignal(responder);
+            u_int8_t chan_type;
+            zmq_recv(responder, &chan_type, sizeof(chan_type), 0);
+            sendSignal(responder);
+            u_int32_t reliability;
+            zmq_recv(responder, &reliability, sizeof(reliability), 0);
             child_dc = (DataChannel *) malloc(sizeof(DataChannel *));
-            child_dc = _CreateDataChannel(child_pc, label_arg, proto_arg);
+            child_dc = _CreateDataChannel(child_pc, label_arg, proto_arg, chan_type, reliability);
             int pid = getpid();
             zmq_send(responder, &pid, sizeof(pid), 0); 
             }
@@ -532,7 +538,7 @@ extern "C" {
     return ret_val;
   }
 
-  int CreateDataChannel(void* socket, const char* label, const char* protocol) {
+  int CreateDataChannel(void* socket, const char* label, const char* protocol, u_int8_t chan_type, u_int32_t reliability) {
     int command = CREATE_DC;
     zmq_send (socket, &command, sizeof(command), 0);
     signalSink(socket);
@@ -546,6 +552,10 @@ extern "C" {
     zmq_send (socket, label, label_length, 0);
     signalSink(socket);
     zmq_send (socket, protocol, protocol_length, 0);
+    signalSink(socket);
+    zmq_send (socket, &chan_type, sizeof(chan_type), 0);
+    signalSink(socket);
+    zmq_send (socket, &reliability, sizeof(reliability), 0);
     int pid;
     zmq_recv (socket, &pid, sizeof(pid), 0);
     return pid;
@@ -677,14 +687,14 @@ extern "C" {
     return pc->SetRemoteIceCandidates(candidate_sdps_vec);
   }
 
-  DataChannel* _CreateDataChannel(PeerConnection *pc, char* label, char* protocol) {
+  DataChannel* _CreateDataChannel(PeerConnection *pc, char* label, char* protocol, u_int8_t chan_type, u_int32_t reliability) {
     std::string label_string (label);
     std::string protocol_string (protocol);
     free(label); free(protocol);
     if (protocol_string.size() > 0) {
-      return pc->CreateDataChannel(label_string, protocol_string).get();
+      return pc->CreateDataChannel(label_string, protocol_string, chan_type, reliability).get();
     } else {
-      return pc->CreateDataChannel(label_string).get();
+      return pc->CreateDataChannel(label_string, protocol_string = "", chan_type, reliability).get();
     }
   }
 

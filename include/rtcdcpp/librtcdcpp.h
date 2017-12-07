@@ -65,7 +65,7 @@ char* GenerateAnswer(void* socket);
 bool SetRemoteIceCandidate(void* socket, const char* candidate_sdp); 
 bool SetRemoteIceCandidates(void* socket, const GArray* candidate_sdps);
 
-int CreateDataChannel(void* socket, const char* label, const char* protocol);
+int CreateDataChannel(void* socket, const char* label, const char* protocol, u_int8_t chan_type, u_int32_t reliability);
 // DataChannel member functions
 // TODO 
 u_int16_t getDataChannelStreamID(void* socket, DataChannel *dc);
@@ -83,7 +83,7 @@ char* _GenerateOffer(PeerConnection* pc);
 char* _GenerateAnswer(PeerConnection* pc);
 bool _SetRemoteIceCandidate(PeerConnection* pc, const char* candidate_sdp); 
 bool _SetRemoteIceCandidates(PeerConnection* pc, const GArray* candidate_sdps);
-DataChannel *_CreateDataChannel(PeerConnection* pc, char* label, char* protocol);
+DataChannel *_CreateDataChannel(PeerConnection* pc, char* label, char* protocol, u_int8_t chan_type, u_int32_t reliability);
 // DataChannel member functions
 u_int16_t _getDataChannelStreamID(DataChannel *dc);
 u_int8_t _getDataChannelType(DataChannel *dc);

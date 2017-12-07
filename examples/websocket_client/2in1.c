@@ -180,7 +180,7 @@ int main() {
   ParseOffer(sock1, ""); //trigger ICE
   ParseOffer(sock2, ""); // ""
 
-  CreateDataChannel(sock1, "testchannel", "");
+  CreateDataChannel(sock1, "testchannel", "", 0x00, 0);
 
   int repeat = 0;
   while(repeat < 1) {
