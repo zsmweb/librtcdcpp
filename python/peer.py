@@ -88,7 +88,6 @@ async def run(evt_loop, user):
             }
             if cent_client.publish(uinput, payload) is None:
                 pass
-            state = 1
             return peer
 
     async def uuid_input_loop(peer):
@@ -130,7 +129,7 @@ async def run(evt_loop, user):
             cent_client.publish(from_client, payload)
         elif sdp_type == "answer":
             peer.ParseOffer(sdp)
-            print("Answer parsed")
+            print("SDP answer has been parsed, trying to establish a connection...")
 
     async def join_handler(**kwargs):
         print("Join:", kwargs)
