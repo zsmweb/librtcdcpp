@@ -30,9 +30,9 @@ _\*concurrent test was done with 2 peers at a time with the same packet size for
 
 ### Signalling server
 
-From project root, on the host machine or a different machine on the network, set up the signalling server:
+From project root, on the host machine or a different machine on the network (x86/amd64 only), set up the signalling server:
 
-* Run the centrifugo real-time messaging server container: `docker run --ulimit nofile=65536:65536 -v ./:/centrifugo -p 8000:8000 centrifugo/centrifugo centrifugo -c cent_config.json`
+* Run the centrifugo real-time messaging server container: `docker run --ulimit nofile=65536:65536 -v $(pwd):/centrifugo -p 8000:8000 centrifugo/centrifugo centrifugo -c cent_config.json`
 
 ### Signalling client
 
