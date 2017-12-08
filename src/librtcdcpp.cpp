@@ -82,7 +82,6 @@ extern "C" {
   }
 
   cb_event_loop* init_cb_event_loop() {
-    printf("\nParent PID is: %d\n", getpid());
     cb_event_loop* cb_loop = new cb_event_loop();
     return cb_loop;
   }
