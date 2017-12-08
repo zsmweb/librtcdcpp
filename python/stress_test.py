@@ -78,6 +78,9 @@ class graph():
         ax.set_xticklabels([speed[0] for speed in self.speed_for_packet])
         ax.legend()
         fig.tight_layout()
+        plt.savefig('graph.png')
+        print("Tests done! Graph is saved to graph.png")
+        print("Plotting graph...")
         plt.show()
 
 
