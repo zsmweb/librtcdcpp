@@ -15,8 +15,7 @@ ffibuilder.set_source("libpyrtcdcpp",
                                     "/usr/include/glib-2.0",
                                     "/usr/lib64/glib-2.0/include",
                                     "/usr/lib/glib-2.0/include",
-                                    "/usr/lib/arm-linux-gnueabihf\
-                                    /glib-2.0/include"],
+                                    "/usr/lib/arm-linux-gnueabihf/glib-2.0/include"],
                       libraries=["rtcdcpp"],
                       library_dirs=["../"])
 
