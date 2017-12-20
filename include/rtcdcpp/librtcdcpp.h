@@ -19,7 +19,7 @@ typedef struct cb_event_loop cb_event_loop;
 #include <glib.h>
 #include <sys/types.h>
 
-cb_event_loop* init_cb_event_loop();
+cb_event_loop* init_cb_event_loop(void);
 
 struct RTCIceServer_C {
   const char* hostname;
@@ -112,7 +112,7 @@ void SetOnErrorCallback(void *socket, DataChannel *dc, on_error error_cb);
 //void _SetOnClosedCallback(DataChannel *dc, on_close close_cb);
 //void _SetOnErrorCallback(DataChannel *dc, on_error error_cb);
 
-void processWait();
+void processWait(void);
 void exitter(pid_t pid, int ret);
 #ifdef __cplusplus
 }
