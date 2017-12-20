@@ -383,6 +383,9 @@ extern "C" {
             break;
         }
       }
+      while(1) {
+        sleep(3); // Keep child process alive to handle DC close
+      }
     } else {
       // Parent
       char cb_bind_path[33];
@@ -400,8 +403,8 @@ extern "C" {
       //assert (rc2 == 0);
       pc_info_ret.socket = requester;
       pc_info_ret.pid = cpid;
+      return pc_info_ret;
     }
-    return pc_info_ret;
   }
 
   void _waitCallable(int i) {
@@ -471,6 +474,7 @@ extern "C" {
   void ParseOffer(void *socket, const char *sdp) {
     int child_command = PARSE_SDP;
     zmq_send (socket, &child_command, sizeof(child_command), 0); // Send command
+    printf("\nSDP: %s\n", sdp);
     size_t sdp_length = strlen(sdp);
     signalSink(socket);
     zmq_send (socket, &sdp_length, sizeof(sdp_length), 0);
@@ -561,6 +565,7 @@ extern "C" {
   };
   
   void closeDataChannel(void* socket) {
+    printf("\nSent close\n");
     int command = CLOSE_DC;
     zmq_send (socket, &command, sizeof(command), 0);
     signalSink(socket);
