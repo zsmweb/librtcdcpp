@@ -474,7 +474,6 @@ extern "C" {
   void ParseOffer(void *socket, const char *sdp) {
     int child_command = PARSE_SDP;
     zmq_send (socket, &child_command, sizeof(child_command), 0); // Send command
-    printf("\nSDP: %s\n", sdp);
     size_t sdp_length = strlen(sdp);
     signalSink(socket);
     zmq_send (socket, &sdp_length, sizeof(sdp_length), 0);
