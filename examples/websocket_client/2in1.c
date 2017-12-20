@@ -135,18 +135,18 @@ int main() {
   cb_event_loop* cb_loop;
   cb_loop = init_cb_event_loop();
 
-  void custom_close1() {
-    printf("\nCLOSE1 %d\n", getpid());
+  void custom_close1(int pid) {
+    printf("\nCLOSE1 at %d of %d\n", getpid(), pid);
     //exitter(0);
   }
 
-  void onStringMsg1(const char* message) {
+  void onStringMsg1(int pid, const char* message) {
     /*printf("\nMSG1: %s\n", message);*/
   }
   void onDCCallback(int pid, void *socket, cb_event_loop* cb_loop) {
     printf("\n=sock1===Got datachannel!=======%d\n", getpid());
     //printf("\nCB loop process: %p\n", cb_loop);
-    //SetOnClosedCallback(pid, cb_loop, custom_close1);
+    SetOnClosedCallback(pid, cb_loop, custom_close1);
     SetOnStringMsgCallback(pid, cb_loop, onStringMsg1);
   }
 
@@ -155,15 +155,16 @@ int main() {
     //exitter(0); //No need to call it here now. child will die after it transmits callback to parent
   }
 
-  void onStringMsg2(const char* message) {
+  void onStringMsg2(int pid, const char* message) {
     /*printf("\nMSG2: %s\n", message);*/
   }
   void onDCCallback1(int pid, void* socket, cb_event_loop* cb_loop) {
     printf("\n=sock2===Got datachannel!=======%d\n", getpid());
     //printf("\nCB loop process: %p\n", cb_loop);
-    //SetOnClosedCallback(pid, cb_loop, custom_close2);
+    SetOnClosedCallback(pid, cb_loop, custom_close2);
     SetOnStringMsgCallback(pid, cb_loop, onStringMsg2);
-    run_stress_test(socket); // spawns a thread as nothing should block in callbacks
+    closeDataChannel(socket);
+    //run_stress_test(socket); // spawns a thread as nothing should block in callbacks
   }
   void* sock1;
   void* sock2;
@@ -171,7 +172,7 @@ int main() {
   
 
   pc_info pc_info_ret1, pc_info_ret2;
-  pc_info_ret1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback, cb_loop);
+  pc_info_ret1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback1, cb_loop);
   pc_info_ret2 = newPeerConnection(rtc_conf1, onIceCallback, onDCCallback, cb_loop);
 
   sock1 = pc_info_ret1.socket;
@@ -182,18 +183,13 @@ int main() {
 
   CreateDataChannel(sock1, "testchannel", "", 0x00, 0);
 
-  int repeat = 0;
-  while(repeat < 1) {
-    printf("\n========================\n");
-
-    char* offer = GenerateOffer(sock1);
-    ParseOffer(sock2, offer);
-    free(offer);
-    char* answer = GenerateAnswer(sock2);
-    ParseOffer(sock1, answer);
-    free(answer);
-    break;
-  }
+  printf("\n====================++++%d++\n", getpid());
+  char* offer = GenerateOffer(sock1);
+  ParseOffer(sock2, offer);
+  free(offer);
+  char* answer = GenerateAnswer(sock2);
+  ParseOffer(sock1, answer);
+  free(answer);
   processWait();
   return 0;
 }
