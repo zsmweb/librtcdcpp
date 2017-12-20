@@ -45,6 +45,7 @@ class Peer(PeerConnection):
         state = 1
         dc = dcn
         print("\n=======Got DC=======\n")
+        print("\nSend msg:-")
 
     def onClose(self):
         print("DC Closed")
