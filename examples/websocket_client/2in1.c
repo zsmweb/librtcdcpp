@@ -114,7 +114,7 @@ int main() {
   rtc_conf.ice_ufrag = NULL;
   rtc_conf.ice_pwd = NULL;
   rtc_conf.ice_servers = ice_servers;
-
+  rtc_conf.ice_port_range1 = rtc_conf.ice_port_range2 = 0;
   struct RTCIceServer_C rtc_ice1;
   rtc_ice1.hostname = "stun3.l.google.com";
   rtc_ice1.port = 19302;
@@ -125,6 +125,7 @@ int main() {
   rtc_conf1.ice_ufrag = NULL;
   rtc_conf1.ice_pwd = NULL;
   rtc_conf1.ice_servers = ice_servers1;
+  rtc_conf1.ice_port_range1 = rtc_conf1.ice_port_range2 = 0;
 
 
   void onIceCallback(struct IceCandidate_C ice_cand) { 
@@ -171,7 +172,10 @@ int main() {
 
   
 
-  pc_info pc_info_ret1, pc_info_ret2;
+  pc_info pc_info_ret1;
+  pc_info pc_info_ret2;
+  pc_info_ret1.pid = pc_info_ret2.pid = 0;
+  pc_info_ret1.socket = pc_info_ret2.socket = NULL;
   pc_info_ret1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback1, cb_loop);
   pc_info_ret2 = newPeerConnection(rtc_conf1, onIceCallback, onDCCallback, cb_loop);
 
