@@ -112,7 +112,7 @@ void SCTPWrapper::OnNotification(union sctp_notification *notify, size_t len) {
       list_len /= sizeof(uint16_t);
       for (int i = 0; i < list_len; i++) {
         uint16_t streamid = reset_event->strreset_stream_list[i];
-        uint16_t set_flags;
+        uint16_t set_flags = 0;
         if (reset_event->strreset_flags != 0) {
           if ((reset_event->strreset_flags ^ SCTP_STREAM_RESET_INCOMING_SSN) == 0) {
             set_flags = SCTP_STREAM_RESET_OUTGOING;  
