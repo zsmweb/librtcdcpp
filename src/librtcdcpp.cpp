@@ -416,21 +416,21 @@ extern "C" {
       //printf("\nWait err: %s\n", strerror(errno));
       return;
     }
-    printf("\nProcess %d has terminated with status code %d\n", process_id, i);
+    //printf("\nProcess %d has terminated with status code %d\n", process_id, i);
     if (WIFEXITED(i)) {
-      printf("\nIt exited normally with status code %d\n", WEXITSTATUS(i));
+      //printf("\nIt exited normally with status code %d\n", WEXITSTATUS(i));
     }
     if (WIFSIGNALED(i)) {
-      printf("\nIt exited by signal with sig no %d\n", WTERMSIG(i));
+      //printf("\nProcess %d exited by signal with sig no %d\n", process_id, WTERMSIG(i));
       if (WCOREDUMP(i)) {
-        printf("\nIt exited with a coredump.\n");
+        printf("\nProcess %d exited with a coredump!!\n", process_id);
       }
     }
     if (WIFSTOPPED(i)) {
-      printf("\nProcess stopped by a trace signal %d\n", WSTOPSIG(i));
+      //printf("\nProcess stopped by a trace signal %d\n", WSTOPSIG(i));
     }
     if (WIFCONTINUED(i)) {
-      printf("\nProcess resumed by SIGCONT signal\n");
+      //printf("\nProcess resumed by SIGCONT signal\n");
     }
   }
 
