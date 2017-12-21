@@ -271,9 +271,11 @@ extern "C" {
               size_t length;
               zmq_recv (responder, &length, sizeof(length), 0);
               sendSignal(responder); // Respond with dummy signal to get content
-              char candidate_sdp_arg[length];
+              char* candidate_sdp_arg = (char *) calloc(sizeof(char), length + 1);
               zmq_recv (responder, candidate_sdp_arg, length, 0);
+              candidate_sdp_arg[length] = '\0';
               ret_bool = _SetRemoteIceCandidate(child_pc, candidate_sdp_arg);
+              free(candidate_sdp_arg);
               zmq_send (responder, &ret_bool, sizeof(ret_bool), 0); // Respond with return value
             }
             break;
