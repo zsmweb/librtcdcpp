@@ -299,8 +299,8 @@ extern "C" {
             sendSignal(responder); // req proto length
             zmq_recv(responder, &proto_arg_length, sizeof(proto_arg_length), 0);
             sendSignal(responder); // req label
-            char* label_arg = (char*) malloc(label_arg_length);
-            char* proto_arg = (char*) malloc(proto_arg_length);
+            char* label_arg = (char*) malloc(label_arg_length + 1);
+            char* proto_arg = (char*) malloc(proto_arg_length + 1);
             zmq_recv(responder, label_arg, label_arg_length, 0);
             (label_arg)[label_arg_length] = '\0';
             sendSignal(responder); // req proto
@@ -492,7 +492,7 @@ extern "C" {
       return NULL;
     }
     sendSignal(socket); // dummy request for content
-    char* recv_offer = (char*) malloc(*length);
+    char* recv_offer = (char*) malloc(*length + 1);
     recv_offer[*length] = '\0';
     zmq_recv (socket, recv_offer, *length, 0);
     free(length);
@@ -508,7 +508,7 @@ extern "C" {
       return NULL;
     }
     sendSignal(socket);
-    char *answer = (char *) malloc(length);
+    char *answer = (char *) malloc(length + 1);
     zmq_recv (socket, answer, length, 0);
     answer[length] = '\0';
     return answer;
