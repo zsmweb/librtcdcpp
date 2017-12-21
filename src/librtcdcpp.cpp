@@ -236,7 +236,7 @@ extern "C" {
               zmq_recv (responder, &length, sizeof(length), 0); // Wait for response
               // Ask for actual content in our response using dummy signal
               sendSignal(responder);
-              char parse_sdp_arg[length];
+              char parse_sdp_arg[length] = "";
               zmq_recv (responder, parse_sdp_arg, length, 0);
               _ParseOffer(child_pc, parse_sdp_arg);
               sendSignal(responder);
