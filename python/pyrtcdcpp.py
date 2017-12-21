@@ -66,10 +66,13 @@ class DataChannel():
 
 class RTCConf():
     def __init__(self, ice_servers: List[tuple],
-                 ice_ufrag: str = None, ice_pwd: str = None):
+                 ice_ufrag: str = None, ice_pwd: str = None,
+                 ice_port_range: tuple = (0, 0)):
         self._ice_servers = ice_servers
         self._ice_ufrag = ice_ufrag
         self._ice_pwd = ice_pwd
+        self._ice_port_range1 = ice_port_range[0]
+        self._ice_port_range2 = ice_port_range[1]
 
 
 class PeerConnection():
@@ -146,6 +149,8 @@ class PeerConnection():
         rtc_conf_s.ice_pwd = ffi.NULL if rtc_conf._ice_pwd is None \
             else rtc_conf._ice_pwd
         rtc_conf_s.ice_servers = garray
+        rtc_conf_s.ice_port_range1 = rtc_conf._ice_port_range1
+        rtc_conf_s.ice_port_range2 = rtc_conf._ice_port_range2
 
         # Note: Both onDCCallback and onIceCallback aren't redefined.
 
