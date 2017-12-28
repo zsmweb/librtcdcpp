@@ -37,7 +37,8 @@ class Peer(PeerConnection):
         pass  # We don't want trickle ICE now
 
     def onMessage(self, msg):
-        print("\nReceived message: " + msg + "\n")
+        print("\nReceived message: " + msg)
+        print("Send msg:-")
 
     def onChannel(self, dcn):
         global dc
@@ -45,7 +46,7 @@ class Peer(PeerConnection):
         state = 1
         dc = dcn
         print("\n=======Got DC=======\n")
-        print("\nSend msg:-")
+        print("\nPress enter to get the prompt.")
 
     def onClose(self):
         print("DC Closed")
