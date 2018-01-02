@@ -272,7 +272,3 @@ class init_cb_event_loop():
 
 def processWait():
     lib.processWait()
-
-
-def exitter(arg: int):
-    lib.exitter(arg)

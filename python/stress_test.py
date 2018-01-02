@@ -1,5 +1,5 @@
 from pyrtcdcpp import RTCConf, PeerConnection, \
-    processWait, exitter, init_cb_event_loop, DataChannel
+    processWait, init_cb_event_loop, DataChannel
 from pprint import pprint
 from threading import Thread
 from time import sleep, time
