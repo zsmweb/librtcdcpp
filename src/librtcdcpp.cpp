@@ -148,9 +148,13 @@ extern "C" {
     process_status.push_front(process_status_var);
 
     if (cpid == 0) {
+      bool relayedOnClose = false;
+      bool alive = true;
+
       //child
+      void *child_context = zmq_ctx_new ();
       DataChannel* child_dc;
-      std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [dc_cb, &child_dc](std::shared_ptr<DataChannel> channel) {
+      std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [dc_cb, &child_dc, &relayedOnClose, &alive](std::shared_ptr<DataChannel> channel) {
         void *child_to_parent_context = zmq_ctx_new ();
         // TODO: onBinary and onError callbacks (later)
         std::function<void(std::string string1)> onStringMsg = [child_to_parent_context](std::string string1) {
@@ -166,7 +170,7 @@ extern "C" {
           zmq_close (pusher); 
         };
 
-        std::function<void()> onClosed = [child_to_parent_context]() {
+        std::function<void()> onClosed = [child_to_parent_context, &relayedOnClose, &alive]() {
           librtcdcpp::Callback* callback = new librtcdcpp::Callback;
           SetCallbackTypeOnClose(callback);
           std::string serialized_cb;
@@ -178,13 +182,13 @@ extern "C" {
           zmq_send (pusher, (const void *) serialized_cb.c_str(), serialized_cb.size(), 0);
           //zmq_setsockopt(pusher,  //no linger?
           if (zmq_close (pusher) != 0) {
-            //printf("\nZMQ close error: %s\n", strerror(errno));
+            printf("\nZMQ close error: %s\n", strerror(errno));
           }
-          if (zmq_term(child_to_parent_context) != 0) {
-            //printf("\nZMQ term error: %s\n", strerror(errno));
+          if (zmq_ctx_term(child_to_parent_context) != 0) {
+            printf("\nZMQ term error: %s\n", strerror(errno));
           }
-          std::thread ext(exitter, 0, getpid());
-          ext.detach();
+          relayedOnClose = true;
+          alive = false;
         };
         
         child_dc = (DataChannel *) channel.get();
@@ -208,15 +212,12 @@ extern "C" {
 
       PeerConnection* child_pc;
       child_pc = new rtcdcpp::PeerConnection(config, onLocalIceCandidate, onDataChannel);
-      void *child_context = zmq_ctx_new ();
       void *responder = zmq_socket (child_context, ZMQ_REP);
       char bind_path[30];
       snprintf(bind_path, sizeof(bind_path), "ipc:///tmp/librtcdcpp%d", getpid());
       int rc1 = zmq_bind (responder, bind_path);
       //printf("\nCreated file %s\n", bind_path);
-
       assert (rc1 == 0);
-      bool alive = true;
       int command;
 
       while(alive) {
@@ -384,12 +385,16 @@ extern "C" {
             }
             break;
           default:
+            alive = false;
             break;
         }
       }
-      while(1) {
-        sleep(3); // Keep child process alive to handle DC close
+      while(!relayedOnClose) {
+        sleep(0.3); // Keep child process alive to handle DC close (till onClosed is called)
       }
+      zmq_close(responder);
+      zmq_ctx_term(child_context);
+      exit(0);
     } else {
       // Parent
       char cb_bind_path[33];
@@ -404,7 +409,7 @@ extern "C" {
       char connect_path[30];
       snprintf(connect_path, sizeof(connect_path), "ipc:///tmp/librtcdcpp%d", cpid);
       int rc2 = zmq_connect(requester, connect_path);
-      //assert (rc2 == 0);
+      assert (rc2 == 0);
       pc_info_ret.socket = requester;
       pc_info_ret.pid = cpid;
       return pc_info_ret;
@@ -440,24 +445,6 @@ extern "C" {
     for (int i : process_status) {
       _waitCallable(std::ref(i)); //!
     }
-    sleep(3); //Maybe a little overkill or not needed at all. Run some tests again
-  }
-
-  void exitter(pid_t ret, int pid) {
-    char tmp_path[30];
-    sleep(1); // During onClose, to let the other peer reach this stage. (This is supposed to be parent context)
-    snprintf(tmp_path, sizeof(tmp_path), "/tmp/librtcdcpp%d", getpid());
-    //printf("\nRemoving %s\n", tmp_path);
-    if (remove(tmp_path) == -1) {
-      printf("\nRemoving %s error: %s\n", tmp_path, strerror(errno));
-    }
-    snprintf(tmp_path, sizeof(tmp_path), "/tmp/librtcdcpp%d-cb", getpid());
-    //printf("\nRemoving %s\n", tmp_path);
-    if (remove(tmp_path) == -1) {
-      printf("\nRemoving %s error: %s\n", tmp_path, strerror(errno));
-    }
-    kill(pid, SIGTERM); //stop child process
-    exit(ret);
   }
 
   void _destroyPeerConnection(PeerConnection *pc) {
