@@ -151,8 +151,8 @@ int main() {
     SetOnStringMsgCallback(pid, cb_loop, onStringMsg1);
   }
 
-  void custom_close2() {
-    printf("\nCLOSE2 %d\n", getpid());
+  void custom_close2(int pid) {
+    printf("\nCLOSE2 at %d of %d\n", getpid(), pid);
     //exitter(0); //No need to call it here now. child will die after it transmits callback to parent
   }
 
