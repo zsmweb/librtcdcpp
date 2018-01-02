@@ -126,18 +126,21 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
           }
         } else {
           if (cb_obj.cbwo_args() == librtcdcpp::Callback::ON_CHANNEL) {
-            //printf("\nON CHANNEL\n");
             auto callback_fn = cb_evt_loop->on_datachannel_cb[pid];
             callback_fn(pid, cb_evt_loop->getSocket(pid), cb_evt_loop);
           } else if (cb_obj.cbwo_args() == librtcdcpp::Callback::ON_CLOSE) {
-            //printf("\n[CB_LOOP] ON CLOSE for pid %d\n", pid);
             auto callback_fn = cb_evt_loop->on_close_cb[pid];
             callback_fn(pid);
+            //signal the command loop on its child to exit out of it
+            zmq_send(cb_evt_loop->getSocket(pid), "a", sizeof(char), 0);
+            if (zmq_close(cb_evt_loop->pull_sockets[pid]) != 0) {
+              perror("Close pull_socket error:");
+            }
+            cb_evt_loop->pull_sockets.erase(pid);
           }
           //TODO: onError
         }
       }
     }
-    //sleep(1);
   }
 }
