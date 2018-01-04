@@ -137,6 +137,7 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
               perror("Close pull_socket error:");
             }
             cb_evt_loop->pull_sockets.erase(pid);
+            break;
           }
           //TODO: onError
         }
