@@ -655,7 +655,7 @@ extern "C" {
     std::string ret_val;
     ret_val = pc->GenerateOffer();
     char* ret_val1 = (char*) malloc(ret_val.size());
-    snprintf(ret_val1, ret_val.size(), ret_val.c_str());
+    snprintf(ret_val1, ret_val.size(), "%s", ret_val.c_str());
     return ret_val1;
   }
 
@@ -663,7 +663,7 @@ extern "C" {
     std::string ret_val;
     ret_val = pc->GenerateAnswer();
     char* ret_val1 = (char*) malloc(ret_val.size());
-    snprintf(ret_val1, ret_val.size(), ret_val.c_str());
+    snprintf(ret_val1, ret_val.size(), "%s", ret_val.c_str());
     return ret_val1;
   }
 
