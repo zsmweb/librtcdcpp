@@ -317,7 +317,6 @@ extern "C" {
             sendSignal(responder);
             u_int32_t reliability;
             zmq_recv(responder, &reliability, sizeof(reliability), 0);
-            child_dc = (DataChannel *) malloc(sizeof(DataChannel *));
             child_dc = _CreateDataChannel(child_pc, label_arg, proto_arg, chan_type, reliability);
             int pid = getpid();
             zmq_send(responder, &pid, sizeof(pid), 0); 
