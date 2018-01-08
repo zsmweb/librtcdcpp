@@ -161,8 +161,8 @@ bool NiceWrapper::Initialize() {
 
   this->g_main_loop_thread = std::thread(g_main_loop_run, this->loop.get());
 
-  g_object_set(G_OBJECT(agent.get()), "upnp", FALSE, NULL);
-  g_object_set(G_OBJECT(agent.get()), "controlling-mode", 0, NULL);
+  g_object_set(G_OBJECT(agent.get()), "upnp", FALSE, (void *) NULL);
+  g_object_set(G_OBJECT(agent.get()), "controlling-mode", 0, (void *) NULL);
 
   if (config.ice_servers.size() > 1) {
     throw std::invalid_argument("Only up to one ICE server is currently supported");
@@ -176,11 +176,11 @@ bool NiceWrapper::Initialize() {
       in_addr *address = (in_addr *)stun_host->h_addr;
       const char *ip_address = inet_ntoa(*address);
 
-      g_object_set(G_OBJECT(agent.get()), "stun-server", ip_address, NULL);
+      g_object_set(G_OBJECT(agent.get()), "stun-server", ip_address, (void *) NULL);
     }
 
     if (ice_server.port > 0) {
-      g_object_set(G_OBJECT(agent.get()), "stun-server-port", ice_server.port, NULL);
+      g_object_set(G_OBJECT(agent.get()), "stun-server-port", ice_server.port, (void *) NULL);
     } else {
       logger->error("stun port empty");
     }
