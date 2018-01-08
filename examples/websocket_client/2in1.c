@@ -101,6 +101,38 @@ void run_stress_test(void *socket) {
   pthread_detach(t1);
 }
 
+void onIceCallback(struct IceCandidate_C ice_cand) {
+}
+
+void custom_close1(int pid) {
+  printf("\nCLOSE1 at %d of %d\n", getpid(), pid);
+}
+
+void onStringMsg1(int pid, const char* message) {
+  /*printf("\nMSG1: %s\n", message);*/
+}
+void onDCCallback(int pid, void *socket, cb_event_loop* cb_loop) {
+  printf("\n=sock1===Got datachannel!=======%d\n", getpid());
+  //printf("\nCB loop process: %p\n", cb_loop);
+  SetOnClosedCallback(pid, cb_loop, custom_close1);
+  SetOnStringMsgCallback(pid, cb_loop, onStringMsg1);
+}
+
+void custom_close2(int pid) {
+  printf("\nCLOSE2 at %d of %d\n", getpid(), pid);
+}
+
+void onStringMsg2(int pid, const char* message) {
+  /*printf("\nMSG2: %s\n", message);*/
+}
+void onDCCallback1(int pid, void* socket, cb_event_loop* cb_loop) {
+  printf("\n=sock2===Got datachannel!=======%d\n", getpid());
+  SetOnClosedCallback(pid, cb_loop, custom_close2);
+  SetOnStringMsgCallback(pid, cb_loop, onStringMsg2);
+  closeDataChannel(socket);
+  //run_stress_test(socket); // spawns a thread as nothing should block in callbacks
+}
+
 int main() {
   bool running = false;
 
@@ -127,50 +159,12 @@ int main() {
   rtc_conf1.ice_servers = ice_servers1;
   rtc_conf1.ice_port_range1 = rtc_conf1.ice_port_range2 = 0;
 
-
-  void onIceCallback(struct IceCandidate_C ice_cand) { 
-  }
-
   struct DataChannel* dc;
-
   cb_event_loop* cb_loop;
   cb_loop = init_cb_event_loop();
 
-  void custom_close1(int pid) {
-    printf("\nCLOSE1 at %d of %d\n", getpid(), pid);
-    //exitter(0);
-  }
-
-  void onStringMsg1(int pid, const char* message) {
-    /*printf("\nMSG1: %s\n", message);*/
-  }
-  void onDCCallback(int pid, void *socket, cb_event_loop* cb_loop) {
-    printf("\n=sock1===Got datachannel!=======%d\n", getpid());
-    //printf("\nCB loop process: %p\n", cb_loop);
-    SetOnClosedCallback(pid, cb_loop, custom_close1);
-    SetOnStringMsgCallback(pid, cb_loop, onStringMsg1);
-  }
-
-  void custom_close2(int pid) {
-    printf("\nCLOSE2 at %d of %d\n", getpid(), pid);
-    //exitter(0); //No need to call it here now. child will die after it transmits callback to parent
-  }
-
-  void onStringMsg2(int pid, const char* message) {
-    /*printf("\nMSG2: %s\n", message);*/
-  }
-  void onDCCallback1(int pid, void* socket, cb_event_loop* cb_loop) {
-    printf("\n=sock2===Got datachannel!=======%d\n", getpid());
-    //printf("\nCB loop process: %p\n", cb_loop);
-    SetOnClosedCallback(pid, cb_loop, custom_close2);
-    SetOnStringMsgCallback(pid, cb_loop, onStringMsg2);
-    closeDataChannel(socket);
-    //run_stress_test(socket); // spawns a thread as nothing should block in callbacks
-  }
   void* sock1;
   void* sock2;
-
-  
 
   pc_info pc_info_ret1;
   pc_info pc_info_ret2;
