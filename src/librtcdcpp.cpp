@@ -140,8 +140,7 @@ extern "C" {
     void *context = zmq_ctx_new ();
     void *requester = zmq_socket (context, ZMQ_REQ);
 
-    void *cb_context = zmq_ctx_new ();
-    void *cb_pull_socket = zmq_socket (cb_context, ZMQ_PULL);
+    void *cb_pull_socket = zmq_socket (context, ZMQ_PULL);
 
     pc_info pc_info_ret;
     int process_status_var;
