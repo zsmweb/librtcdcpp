@@ -23,6 +23,8 @@
 #include <zmq.h>
 #include <thread>
 #include <errno.h>
+#include <pthread.h>
+
 #define DESTROY_PC 0
 #define PARSE_SDP 1
 #define GENERATE_OFFER 2
@@ -82,6 +84,10 @@ extern "C" {
   }
 
   cb_event_loop* init_cb_event_loop() {
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, 1<<20); // 1 MB
+    pthread_setattr_default_np(&attr);
     cb_event_loop* cb_loop = new cb_event_loop();
     return cb_loop;
   }
