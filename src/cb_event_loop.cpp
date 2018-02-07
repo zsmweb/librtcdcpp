@@ -140,6 +140,7 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
             }
             cb_evt_loop->pull_sockets.erase(pid);
             alive = false;
+            break;
           }
           //TODO: onError
         }
