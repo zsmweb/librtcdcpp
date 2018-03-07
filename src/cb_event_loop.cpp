@@ -12,8 +12,12 @@ struct IceCandidate_C {
     int sdpMLineIndex;
 };
 cb_event_loop::cb_event_loop() {
-  std::thread cb_event_loop(cb_event_loop::parent_cb_loop, this);
-  cb_event_loop.detach();
+  cb_event_loop_thread = std::thread(cb_event_loop::parent_cb_loop, this);
+  cb_event_loop_thread.detach();
+}
+
+cb_event_loop::~cb_event_loop() {
+  cb_event_loop_thread.~thread();
 }
 
 void* cb_event_loop::getSocket(int pid) {

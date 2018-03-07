@@ -1,6 +1,7 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <thread>
 typedef void (*open_cb)(void);
 typedef void (*on_string_msg)(int pid, const char* message);
 typedef void (*on_binary_msg)(void* message);
@@ -17,6 +18,7 @@ typedef void (*dc_fn_ptr_pid)(int, void*, cb_event_loop*);
 
   public:
     cb_event_loop();
+    ~cb_event_loop();
     void add_pull_socket(int pid, void *socket);
     void add_on_candidate(int pid, on_ice_cb fn_ptr);
     void add_on_datachannel(int pid, dc_fn_ptr_pid fn_ptr);
@@ -28,6 +30,7 @@ typedef void (*dc_fn_ptr_pid)(int, void*, cb_event_loop*);
     void* getSocket(int pid);
     void addSocket(int pid, void* socket);
   private:
+    std::thread cb_event_loop_thread;
     std::unordered_map<int, void*> pids_vs_sockets;
     std::map<int, void*> pull_sockets;
     static void parent_cb_loop(cb_event_loop* cb_evt_loop);
