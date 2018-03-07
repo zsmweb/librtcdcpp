@@ -112,7 +112,7 @@ void SetOnErrorCallback(void *socket, DataChannel *dc, on_error error_cb);
 //void _SetOnClosedCallback(DataChannel *dc, on_close close_cb);
 //void _SetOnErrorCallback(DataChannel *dc, on_error error_cb);
 
-void processWait(void);
+void processWait(cb_event_loop*);
 #ifdef __cplusplus
 }
 #endif

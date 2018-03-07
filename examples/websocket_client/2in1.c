@@ -89,6 +89,6 @@ int main() {
   char* answer = GenerateAnswer(sock2);
   ParseOffer(sock1, answer);
   free(answer);
-  processWait();
+  processWait(cb_loop);
   return 0;
 }

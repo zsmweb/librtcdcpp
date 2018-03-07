@@ -445,10 +445,11 @@ extern "C" {
     }
   }
 
-  void processWait() {
+  void processWait(cb_event_loop* cb_loop) {
     for (int i : process_status) {
       _waitCallable(std::ref(i)); //!
     }
+    delete cb_loop;
   }
 
   void _destroyPeerConnection(PeerConnection *pc) {
