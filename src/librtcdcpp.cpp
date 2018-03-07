@@ -107,6 +107,7 @@ extern "C" {
       fillInCandidate(callback, ice_cand_c.candidate, ice_cand_c.sdpMid, ice_cand_c.sdpMLineIndex);
       std::string serialized_cb;
       callback->SerializeToString(&serialized_cb);
+      delete callback;
       void *child_to_parent_context = zmq_ctx_new ();
       void *pusher = zmq_socket (child_to_parent_context, ZMQ_PUSH);
       char cb_connect_path[33];
@@ -167,6 +168,7 @@ extern "C" {
           fillInStringMessage(callback, string1);
           std::string serialized_cb;
           callback->SerializeToString(&serialized_cb);
+          delete callback;
           void *pusher = zmq_socket (child_to_parent_context, ZMQ_PUSH);
           char cb_connect_path[33];
           snprintf(cb_connect_path, sizeof(cb_connect_path), "ipc:///tmp/librtcdcpp%d-cb", getpid());
@@ -180,6 +182,7 @@ extern "C" {
           SetCallbackTypeOnClose(callback);
           std::string serialized_cb;
           callback->SerializeToString(&serialized_cb);
+          delete callback;
           void *pusher = zmq_socket (child_to_parent_context, ZMQ_PUSH);
           char cb_connect_path[33];
           snprintf(cb_connect_path, sizeof(cb_connect_path), "ipc:///tmp/librtcdcpp%d-cb", getpid());
@@ -207,6 +210,7 @@ extern "C" {
           printf("\nDC cb serialize error!\n");
           // return?
         }
+        delete callback;
         void *pusher = zmq_socket (child_to_parent_context, ZMQ_PUSH);
         char cb_connect_path[33];
         snprintf(cb_connect_path, sizeof(cb_connect_path), "ipc:///tmp/librtcdcpp%d-cb", getpid());
