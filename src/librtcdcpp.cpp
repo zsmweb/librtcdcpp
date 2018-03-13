@@ -24,7 +24,6 @@
 #include <thread>
 #include <errno.h>
 #include <pthread.h>
-
 #define DESTROY_PC 0
 #define PARSE_SDP 1
 #define GENERATE_OFFER 2
@@ -61,20 +60,6 @@ extern "C" {
 
   std::list<int> process_status;
 
-  void fillInCandidate(librtcdcpp::Callback* callback, std::string candidate, std::string sdpMid, int sdpMLineIndex) {
-    librtcdcpp::Callback::onCandidate* on_candidate = new librtcdcpp::Callback::onCandidate;
-    on_candidate->set_candidate(candidate.c_str());
-    on_candidate->set_sdpmid(sdpMid.c_str());
-    on_candidate->set_sdpmlineindex(sdpMLineIndex);
-    callback->set_allocated_on_cand(on_candidate);
-  }
-
-  void fillInStringMessage(librtcdcpp::Callback* callback, std::string message) {
-    librtcdcpp::Callback::onMessage* on_message = new librtcdcpp::Callback::onMessage;
-    on_message->set_message(message);
-    callback->set_allocated_on_msg(on_message);
-  }
-
   void SetCallbackTypeOnChannel(librtcdcpp::Callback* callback) {
     callback->set_cbwo_args(librtcdcpp::Callback::ON_CHANNEL);
   }
@@ -97,17 +82,21 @@ extern "C" {
     //spdlog::set_pattern("*** [%H:%M:%S] %P %v ***");
     
     // Local callback that is registered to 'route' the callback to the event loop socket
-    std::function<void(rtcdcpp::PeerConnection::IceCandidate)> onLocalIceCandidate = [ice_cb](rtcdcpp::PeerConnection::IceCandidate candidate)
+    librtcdcpp::Callback* callback = new librtcdcpp::Callback;
+    std::function<void(rtcdcpp::PeerConnection::IceCandidate)> onLocalIceCandidate = [ice_cb, callback](rtcdcpp::PeerConnection::IceCandidate candidate)
     {
       IceCandidate_C ice_cand_c;
       ice_cand_c.candidate = candidate.candidate.c_str(); //
       ice_cand_c.sdpMid = candidate.sdpMid.c_str();
       ice_cand_c.sdpMLineIndex = candidate.sdpMLineIndex;
-      librtcdcpp::Callback* callback = new librtcdcpp::Callback;
-      fillInCandidate(callback, ice_cand_c.candidate, ice_cand_c.sdpMid, ice_cand_c.sdpMLineIndex);
+
+      librtcdcpp::Callback::onCandidate* on_candidate = new librtcdcpp::Callback::onCandidate;
+      on_candidate->set_candidate(ice_cand_c.candidate);
+      on_candidate->set_sdpmid(ice_cand_c.sdpMid);
+      on_candidate->set_sdpmlineindex(ice_cand_c.sdpMLineIndex);
+      callback->set_allocated_on_cand(on_candidate);
       std::string serialized_cb;
       callback->SerializeToString(&serialized_cb);
-      delete callback;
       void *child_to_parent_context = zmq_ctx_new ();
       void *pusher = zmq_socket (child_to_parent_context, ZMQ_PUSH);
       char cb_connect_path[33];
@@ -121,6 +110,7 @@ extern "C" {
     for(int i = 0; i < config_c.ice_servers->len; i++) {
       config.ice_servers.emplace_back(rtcdcpp::RTCIceServer{"stun3.l.google.com", 19302});
     }
+    //g_array_free(config_c.ice_servers, true);
     std::pair<unsigned, unsigned> port_range = std::make_pair(config_c.ice_port_range1, config_c.ice_port_range2);
     config.ice_port_range = port_range;
 
@@ -163,12 +153,14 @@ extern "C" {
       std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [dc_cb, &child_dc, &relayedOnClose, &alive](std::shared_ptr<DataChannel> channel) {
         void *child_to_parent_context = zmq_ctx_new ();
         // TODO: onBinary and onError callbacks (later)
-        std::function<void(std::string string1)> onStringMsg = [child_to_parent_context](std::string string1) {
-          librtcdcpp::Callback* callback = new librtcdcpp::Callback;
-          fillInStringMessage(callback, string1);
+        librtcdcpp::Callback* callback = new librtcdcpp::Callback;
+        std::function<void(std::string string1)> onStringMsg = [child_to_parent_context, callback](std::string string1) {
+          librtcdcpp::Callback::onMessage* on_message = new librtcdcpp::Callback::onMessage;
+          on_message->set_message(string1);
+          callback->set_allocated_on_msg(on_message);
+
           std::string serialized_cb;
           callback->SerializeToString(&serialized_cb);
-          delete callback;
           void *pusher = zmq_socket (child_to_parent_context, ZMQ_PUSH);
           char cb_connect_path[33];
           snprintf(cb_connect_path, sizeof(cb_connect_path), "ipc:///tmp/librtcdcpp%d-cb", getpid());
@@ -177,8 +169,7 @@ extern "C" {
           zmq_close (pusher); 
         };
 
-        std::function<void()> onClosed = [child_to_parent_context, &relayedOnClose, &alive]() {
-          librtcdcpp::Callback* callback = new librtcdcpp::Callback;
+        std::function<void()> onClosed = [child_to_parent_context, &relayedOnClose, &alive, callback]() {
           SetCallbackTypeOnClose(callback);
           std::string serialized_cb;
           callback->SerializeToString(&serialized_cb);
@@ -203,7 +194,6 @@ extern "C" {
         child_dc->SetOnClosedCallback(onClosed);
         child_dc->SetOnStringMsgCallback(onStringMsg);
 
-        librtcdcpp::Callback* callback = new librtcdcpp::Callback;
         SetCallbackTypeOnChannel(callback);
         std::string serialized_cb;
         if (callback->SerializeToString(&serialized_cb) == false) {
