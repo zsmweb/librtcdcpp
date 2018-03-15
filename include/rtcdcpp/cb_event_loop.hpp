@@ -30,7 +30,7 @@ typedef void (*dc_fn_ptr_pid)(int, void*, cb_event_loop*);
     void* getSocket(int pid);
     void addSocket(int pid, void* socket);
   private:
-    std::thread cb_event_loop_thread;
+    std::thread* cb_event_loop_thread;
     std::unordered_map<int, void*> pids_vs_sockets;
     std::map<int, void*> pull_sockets;
     static void parent_cb_loop(cb_event_loop* cb_evt_loop);
