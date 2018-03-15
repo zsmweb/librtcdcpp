@@ -478,6 +478,7 @@ void SCTPWrapper::CreateDCForSCTP(std::string label, std::string protocol, uint8
       logger->info("Datachannel open request has gone through.");
     }
   }
+  free(this->data);
 }
 // Send a message to the remote connection
 void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
