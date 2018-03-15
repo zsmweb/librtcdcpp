@@ -189,7 +189,7 @@ bool NiceWrapper::Initialize() {
   g_signal_connect(G_OBJECT(agent.get()), "candidate-gathering-done", G_CALLBACK(candidate_gathering_done), this);
   g_signal_connect(G_OBJECT(agent.get()), "component-state-changed", G_CALLBACK(component_state_changed), this);
   g_signal_connect(G_OBJECT(agent.get()), "new-candidate-full", G_CALLBACK(new_local_candidate), this);
-  g_signal_connect(G_OBJECT(agent.get()), "new-selected-pair", G_CALLBACK(new_selected_pair), this);
+  g_signal_connect(G_OBJECT(agent.get()), "new-selected-pair-full", G_CALLBACK(new_selected_pair), this);
 
   // TODO: Learn more about nice streams
   this->stream_id = nice_agent_add_stream(agent.get(), 1);
