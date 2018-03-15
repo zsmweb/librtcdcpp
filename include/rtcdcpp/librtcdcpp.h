@@ -27,7 +27,7 @@ struct RTCIceServer_C {
 };
 
 struct RTCConfiguration_C {
-  const GArray* ice_servers; // RTCIceServer_C
+  GArray* ice_servers; // RTCIceServer_C
   unsigned int ice_port_range1;
   unsigned int ice_port_range2;
   const char* ice_ufrag;

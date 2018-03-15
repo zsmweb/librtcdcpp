@@ -121,6 +121,7 @@ extern "C" {
     for(int i = 0; i < config_c.ice_servers->len; i++) {
       config.ice_servers.emplace_back(rtcdcpp::RTCIceServer{"stun3.l.google.com", 19302});
     }
+    g_array_free(config_c.ice_servers, true);
     std::pair<unsigned, unsigned> port_range = std::make_pair(config_c.ice_port_range1, config_c.ice_port_range2);
     config.ice_port_range = port_range;
 
