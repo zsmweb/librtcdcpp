@@ -400,6 +400,7 @@ extern "C" {
       while(!relayedOnClose) {
         sleep(0.3); // Keep child process alive to handle DC close (till onClosed is called)
       }
+      _destroyPeerConnection(child_pc);
       zmq_close(responder);
       zmq_ctx_term(child_context);
       exit(0);

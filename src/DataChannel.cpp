@@ -46,7 +46,7 @@ DataChannel::DataChannel(PeerConnection *pc, uint16_t stream_id, uint8_t chan_ty
   error_cb = [](std::string x) { ; };
 }
 
-DataChannel::~DataChannel() { delete this; }
+DataChannel::~DataChannel() { }
 
 uint16_t DataChannel::GetStreamID() { return this->stream_id; }
 
