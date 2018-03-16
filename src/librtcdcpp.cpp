@@ -115,6 +115,7 @@ extern "C" {
       int cb_rc = zmq_connect (pusher, cb_connect_path);
       zmq_send (pusher, (const void *) serialized_cb.c_str(), serialized_cb.size(), 0);
       zmq_close (pusher);
+      zmq_ctx_term(child_to_parent_context);
     };
 
     rtcdcpp::RTCConfiguration config;
@@ -414,6 +415,7 @@ extern "C" {
       //printf("\nCreated file %s\n", cb_bind_path);
       parent_event_loop->addSocket(cpid, requester);
       parent_event_loop->add_pull_socket(cpid, cb_pull_socket);
+      parent_event_loop->add_pull_context(context);
       parent_event_loop->add_on_candidate(cpid, ice_cb);
       parent_event_loop->add_on_datachannel(cpid, dc_cb);
       char connect_path[30];
@@ -455,6 +457,7 @@ extern "C" {
     for (int i : process_status) {
       _waitCallable(std::ref(i)); //!
     }
+    cb_loop->ctx_term();
     delete cb_loop;
   }
 

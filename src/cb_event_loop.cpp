@@ -36,6 +36,16 @@ void cb_event_loop::add_pull_socket(int pid, void *socket) {
   this->pull_sockets.insert_or_assign(pid, socket);
 }
 
+void cb_event_loop::add_pull_context(void *context) {
+  this->cb_pull_context = context;
+}
+
+void cb_event_loop::ctx_term() {
+  if (zmq_ctx_term(this->cb_pull_context) != 0) {
+    perror("cb_pull_socket ctx term error");
+  }
+}
+
 void cb_event_loop::add_on_candidate(int pid, on_ice_cb fn_ptr) {
   if (!this->on_candidate_cb.emplace(pid, fn_ptr).second) {
     this->on_candidate_cb.erase(pid);
@@ -142,6 +152,10 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
             zmq_send(cb_evt_loop->getSocket(pid), "a", sizeof(char), 0);
             if (zmq_close(cb_evt_loop->pull_sockets[pid]) != 0) {
               perror("Close pull_socket error:");
+            } else {
+              if (zmq_close(cb_evt_loop->getSocket(pid)) != 0) {
+                perror("Close requester socket error:");
+              }
             }
             cb_evt_loop->pull_sockets.erase(pid);
             alive = false;
