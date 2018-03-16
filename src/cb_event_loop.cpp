@@ -171,5 +171,6 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
       alive = true;
       continue;
     }
+    zmq_msg_close(&cb_msg);
   }
 }
