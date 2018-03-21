@@ -357,7 +357,7 @@ std::shared_ptr<DataChannel> PeerConnection::CreateDataChannel(std::string label
   create_dc.detach();
   return new_channel;
 }
-void PeerConnection::ResetSCTPStream(uint16_t stream_id) {
+void PeerConnection::ResetSCTPStream(uint16_t* stream_id) {
   this->sctp->ResetSCTPStream(stream_id, SCTP_STREAM_RESET_OUTGOING);
 }
 }

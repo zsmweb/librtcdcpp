@@ -162,6 +162,6 @@ namespace rtcdcpp {
     void HandleBinaryMessage(ChunkPtr chunk, uint16_t sid);
 
     std::shared_ptr<Logger> logger = GetLogger("rtcdcpp.PeerConnection");
-    void ResetSCTPStream(uint16_t stream_id);
+    void ResetSCTPStream(uint16_t* stream_id);
   };
 }

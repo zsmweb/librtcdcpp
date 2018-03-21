@@ -138,8 +138,10 @@ void SCTPWrapper::OnNotification(union sctp_notification *notify, size_t len) {
         }
         if (set_flags == SCTP_STREAM_RESET_OUTGOING) {
           // Reset the stream when a remote close is received.
+          uint16_t* streamid_h = (uint16_t*) malloc(sizeof(uint16_t));
+          memcpy(streamid_h, &streamid, sizeof(*streamid_h));
           logger->info("SCTP Reset received for stream_id#{} from remote", streamid);
-          ResetSCTPStream(streamid, set_flags);
+          ResetSCTPStream(streamid_h, set_flags);
           // This will cause another event SCTP_STREAM_RESET_OUTGOING_SSN 
           // where we can finally call our callbacks.
         }
@@ -341,20 +343,22 @@ void SCTPWrapper::Stop() {
   usrsctp_deregister_address(this);
 }
 
-void SCTPWrapper::ResetSCTPStream(uint16_t stream_id, uint16_t srs_flags) {
+void SCTPWrapper::ResetSCTPStream(uint16_t* stream_id, uint16_t srs_flags) {
   struct sctp_reset_streams* stream_close = NULL;
   size_t len = sizeof(stream_close) + sizeof(uint16_t);
   stream_close = (sctp_reset_streams *) malloc(len);
   memset(stream_close, 0, len);
   stream_close->srs_flags = srs_flags;
   stream_close->srs_number_streams = 1;
-  stream_close->srs_stream_list[0] = stream_id;
+  stream_close->srs_stream_list[0] = *stream_id;
   if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RESET_STREAMS, stream_close, static_cast<socklen_t>(reinterpret_cast<uintptr_t>(&len))) == -1) {
     logger->error("Could not set socket options for SCTP_RESET_STREAMS. errno={}", errno); 
   } else {
-    logger->info("SCTP_RESET_STREAMS socket option has been set successfully on SID: {}", stream_id);
+    logger->info("SCTP_RESET_STREAMS socket option has been set successfully on SID: {}", *stream_id);
   }
   free(stream_close);
+  free(stream_id);
+  stream_id = NULL;
   stream_close = NULL;
 }
 

@@ -59,8 +59,11 @@ std::string DataChannel::GetProtocol() { return this->protocol; }
 /**
  * Close the DataChannel.
  */
-void DataChannel::Close() { 
-  this->pc->ResetSCTPStream(GetStreamID());
+void DataChannel::Close() {
+  uint16_t* stream_id = (uint16_t*) malloc(sizeof(uint16_t));
+  uint16_t streamid = GetStreamID();
+  memcpy(stream_id, &streamid, sizeof(*stream_id));
+  this->pc->ResetSCTPStream(stream_id);
 }
 
 bool DataChannel::SendString(std::string msg) {
