@@ -435,11 +435,11 @@ extern "C" {
       //parent_event_loop->add_pull_context(context);
       parent_event_loop->add_on_candidate(cpid, ice_cb);
       parent_event_loop->add_on_datachannel(cpid, dc_cb);
-      char connect_path[30];
-      snprintf(connect_path, sizeof(connect_path), "ipc:///tmp/librtcdcpp%d", cpid);
-      int rc2 = zmq_connect(requester, connect_path);
+      //char connect_path[30];
+      //snprintf(connect_path, sizeof(connect_path), "ipc:///tmp/librtcdcpp%d", cpid);
+      //int rc2 = zmq_connect(requester, connect_path);
       //parent_event_loop->addSocket(cpid, requester);
-      assert (rc2 == 0);
+      //assert (rc2 == 0);
       pc_info_ret.socket = requester;
       pc_info_ret.pid = cpid;
       return pc_info_ret;
