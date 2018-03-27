@@ -51,7 +51,9 @@ extern "C" {
   }
 
   void sendSignal(void* zmqsock) {
-    zmq_send (zmqsock, "", 0, 0);
+    if (zmq_send (zmqsock, "", 0, 0) != 0) {
+      perror("ZMQ Send Signal error:");
+    }
   }
 
   void signalSink(void *zmqsock) {
@@ -143,13 +145,13 @@ extern "C" {
        config.certificates.emplace_back(&rtc_cert);
        }
     */ 
-
-    pid_t cpid = fork();
-    //TODO: Try using some options from SETSOCKOPT
     void *context = zmq_ctx_new ();
     void *requester = zmq_socket (context, ZMQ_REQ);
 
     void *cb_pull_socket = zmq_socket (context, ZMQ_PULL);
+    pid_t cpid = fork();
+    //TODO: Try using some options from SETSOCKOPT
+    
 
     pc_info pc_info_ret;
     int process_status_var;
@@ -394,33 +396,49 @@ extern "C" {
             zmq_send (responder, &ret_bool, sizeof(bool), 0);
             }
             break;
-          default:
+          case 500:
+            {
+            std::cerr << "Case of exit out of cmd loop hit";
             alive = false;
             break;
+            }
+          default:
+            {
+            std::cerr << "Default case has been hit in child: " << command;
+            //alive = false;
+            //break;
+            // Figure out why this happens
+            }
         }
       }
       while(!relayedOnClose) {
-        sleep(0.3); // Keep child process alive to handle DC close (till onClosed is called)
+        usleep(500); // Keep child process alive to handle DC close (till onClosed is called)
       }
       _destroyPeerConnection(child_pc);
+      delete parent_event_loop;
       zmq_close(responder);
       zmq_ctx_term(child_context);
+
+      zmq_close(cb_pull_socket);
+      zmq_close(requester);
+      zmq_ctx_term(context);
       exit(0);
     } else {
       // Parent
       char cb_bind_path[33];
+      parent_event_loop->addContext(cpid, context); // 1 ctx per child proc is enough
       snprintf(cb_bind_path, sizeof(cb_bind_path), "ipc:///tmp/librtcdcpp%d-cb", cpid);
       zmq_connect (cb_pull_socket, cb_bind_path);
       zmq_bind (cb_pull_socket, cb_bind_path);
       //printf("\nCreated file %s\n", cb_bind_path);
-      parent_event_loop->addSocket(cpid, requester);
-      parent_event_loop->add_pull_socket(cpid, cb_pull_socket);
-      parent_event_loop->add_pull_context(context);
+      parent_event_loop->add_pull_socket_pid(cpid);
+      //parent_event_loop->add_pull_context(context);
       parent_event_loop->add_on_candidate(cpid, ice_cb);
       parent_event_loop->add_on_datachannel(cpid, dc_cb);
       char connect_path[30];
       snprintf(connect_path, sizeof(connect_path), "ipc:///tmp/librtcdcpp%d", cpid);
       int rc2 = zmq_connect(requester, connect_path);
+      //parent_event_loop->addSocket(cpid, requester);
       assert (rc2 == 0);
       pc_info_ret.socket = requester;
       pc_info_ret.pid = cpid;
@@ -458,6 +476,7 @@ extern "C" {
       _waitCallable(std::ref(i)); //!
     }
     cb_loop->ctx_term();
+    std::cout << "\nDELETE on cb_loop\n";
     delete cb_loop;
   }
 
