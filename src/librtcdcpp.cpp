@@ -148,7 +148,6 @@ extern "C" {
     void *context = zmq_ctx_new ();
     void *requester = zmq_socket (context, ZMQ_REQ);
 
-    void *cb_pull_socket = zmq_socket (context, ZMQ_PULL);
     pid_t cpid = fork();
     //TODO: Try using some options from SETSOCKOPT
     
@@ -425,11 +424,7 @@ extern "C" {
       exit(0);
     } else {
       // Parent
-      char cb_bind_path[33];
       parent_event_loop->addContext(cpid, context); // 1 ctx per child proc is enough
-      snprintf(cb_bind_path, sizeof(cb_bind_path), "ipc:///tmp/librtcdcpp%d-cb", cpid);
-      zmq_connect (cb_pull_socket, cb_bind_path);
-      zmq_bind (cb_pull_socket, cb_bind_path);
       //printf("\nCreated file %s\n", cb_bind_path);
       parent_event_loop->add_pull_socket_pid(cpid);
       //parent_event_loop->add_pull_context(context);
