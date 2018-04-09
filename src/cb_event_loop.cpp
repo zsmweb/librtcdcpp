@@ -150,6 +150,7 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
       cb_evt_loop->pull_sockets.insert_or_assign(pid, cb_pull_socket);
       cb_evt_loop->pull_socket_pids.pop_back();
     }
+    lock1.unlock();
     for (auto const pull_socket : cb_evt_loop->pull_sockets) {
       int pid = pull_socket.first; // auto pid?
       while (cb_zmq_recv != -1) {
