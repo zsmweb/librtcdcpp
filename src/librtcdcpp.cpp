@@ -146,9 +146,7 @@ extern "C" {
        rtc_cert = &g_array_index(config_c.certificates, rtcdcpp::RTCCertificate, i);
        config.certificates.emplace_back(&rtc_cert);
        }
-    */ 
-    void *context = zmq_ctx_new ();
-    void *requester = zmq_socket (context, ZMQ_REQ);
+    */
 
     pid_t cpid = fork();
     //TODO: Try using some options from SETSOCKOPT
@@ -163,7 +161,6 @@ extern "C" {
       bool alive = true;
 
       //child
-      void *child_context = zmq_ctx_new ();
       DataChannel* child_dc;
       std::function<void(std::shared_ptr<DataChannel> channel)> onDataChannel = [dc_cb, &child_dc, &relayedOnClose, &alive](std::shared_ptr<DataChannel> channel) {
         void *child_to_parent_context = zmq_ctx_new ();
@@ -226,14 +223,33 @@ extern "C" {
 
       PeerConnection* child_pc;
       child_pc = new rtcdcpp::PeerConnection(config, onLocalIceCandidate, onDataChannel);
-      void *responder = zmq_socket (child_context, ZMQ_REP);
-      char bind_path[30];
-      snprintf(bind_path, sizeof(bind_path), "ipc:///tmp/librtcdcpp%d", getpid());
-      int rc1 = zmq_bind (responder, bind_path);
-      //printf("\nCreated file %s\n", bind_path);
-      assert (rc1 == 0);
-      int command;
 
+      char bind_path[40];
+      int rc1;
+
+      void *child_context = zmq_ctx_new ();
+      void *router = zmq_socket (child_context, ZMQ_ROUTER);
+      snprintf(bind_path, sizeof(bind_path), "ipc:///tmp/librtcdcpp%d-router", getpid());
+      rc1 = zmq_bind (router, bind_path);
+      assert (rc1 == 0);
+
+      void *dealer = zmq_socket (child_context, ZMQ_DEALER);
+      snprintf(bind_path, sizeof(bind_path), "ipc:///tmp/librtcdcpp%d-dealer", getpid());
+      rc1 = zmq_bind (dealer, bind_path);
+      assert (rc1 == 0);
+
+      void *responder = zmq_socket (child_context, ZMQ_REP);
+      if (responder == NULL) {
+        perror("ZMQ REP socket err");
+      }
+      snprintf(bind_path, sizeof(bind_path), "ipc:///tmp/librtcdcpp%d-dealer", getpid());
+      rc1 = zmq_connect (responder, bind_path);
+      assert (rc1 == 0);
+
+      std::thread z_prox (zmq_proxy, router, dealer, nullptr);
+      z_prox.detach();
+
+      int command;
       while(alive) {
         if (zmq_recv (responder, &command, sizeof(command), 0) == -1) {
           perror("ZMQ_recv in cmd loop error");
@@ -422,24 +438,17 @@ extern "C" {
       zmq_close(responder);
       zmq_ctx_term(child_context);
 
-      zmq_close(cb_pull_socket);
-      zmq_close(requester);
-      zmq_ctx_term(context);
+      //zmq_close(requester);
+      //zmq_ctx_term(context);
       exit(0);
     } else {
       // Parent
+      void *context = zmq_ctx_new ();
       parent_event_loop->addContext(cpid, context); // 1 ctx per child proc is enough
-      //printf("\nCreated file %s\n", cb_bind_path);
       parent_event_loop->add_pull_socket_pid(cpid);
-      //parent_event_loop->add_pull_context(context);
       parent_event_loop->add_on_candidate(cpid, ice_cb);
       parent_event_loop->add_on_datachannel(cpid, dc_cb);
-      //char connect_path[30];
-      //snprintf(connect_path, sizeof(connect_path), "ipc:///tmp/librtcdcpp%d", cpid);
-      //int rc2 = zmq_connect(requester, connect_path);
-      //parent_event_loop->addSocket(cpid, requester);
-      //assert (rc2 == 0);
-      pc_info_ret.socket = requester;
+      pc_info_ret.context = context;
       pc_info_ret.pid = cpid;
       return pc_info_ret;
     }
