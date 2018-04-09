@@ -21,6 +21,13 @@ cb_event_loop::~cb_event_loop() {
   delete cb_event_loop_thread;
 }
 
+pc_info cb_event_loop::make_pc_info(int pid) {
+  pc_info pc_info_ret;
+  pc_info_ret.context = this->getContext(pid);
+  pc_info_ret.pid = pid;
+  return pc_info_ret;
+}
+
 void* cb_event_loop::getSocket(int pid) {
   void *requester = zmq_socket (this->getContext(pid), ZMQ_REQ);
   char connect_path[30];

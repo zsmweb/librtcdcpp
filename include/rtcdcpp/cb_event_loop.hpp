@@ -34,6 +34,7 @@ typedef void (*dc_fn_ptr_pid)(int, void*, cb_event_loop*);
     void* getSocket(int pid);
     void addSocket(int pid, void* socket);
     void ctx_term();
+    pc_info make_pc_info(int pid);
   private:
     std::mutex vec_lk;
     void* getContext(int pid);
