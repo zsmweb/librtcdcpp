@@ -192,7 +192,7 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
 					} else {
 						if (cb_obj.cbwo_args() == librtcdcpp::Callback::ON_CHANNEL) {
 							auto callback_fn = cb_evt_loop->on_datachannel_cb[pid];
-							callback_fn(pid, cb_evt_loop->getSocket(pid), cb_evt_loop);
+							callback_fn(pid, cb_evt_loop->make_pc_info(pid), cb_evt_loop);
 						} else if (cb_obj.cbwo_args() == librtcdcpp::Callback::ON_CLOSE) {
 							auto callback_fn = cb_evt_loop->on_close_cb[pid];
 							if (callback_fn) {

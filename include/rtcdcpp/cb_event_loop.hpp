@@ -9,13 +9,17 @@ typedef void (*on_binary_msg)(void* message);
 typedef void (*on_close)(int pid);
 typedef void (*on_error)(const char* description);
 
+struct pc_info {
+  int pid;
+  void* context;
+};
 
 typedef struct IceCandidate_C IceCandidate_C;
 typedef void (*on_ice_cb)(IceCandidate_C ice_c);
 
 class cb_event_loop {
 
-typedef void (*dc_fn_ptr_pid)(int, void*, cb_event_loop*);
+typedef void (*dc_fn_ptr_pid)(int, pc_info, cb_event_loop*);
 
   public:
     cb_event_loop();

@@ -19,7 +19,7 @@ void custom_close1(int pid) {
   printf("\nCLOSE1 at %d of %d\n", getpid(), pid);
 }
 
-void onDCCallback(int pid, void *socket, cb_event_loop* cb_loop) {
+void onDCCallback(int pid, pc_info pc_info1, cb_event_loop* cb_loop) {
   printf("\n====Got datachannel!=======%d\n", getpid());
   SetOnClosedCallback(pid, cb_loop, custom_close1);
 }
@@ -28,10 +28,10 @@ void custom_close2(int pid) {
   printf("\nCLOSE2 at %d of %d\n", getpid(), pid);
 }
 
-void onDCCallback1(int pid, void* socket, cb_event_loop* cb_loop) {
+void onDCCallback1(int pid, pc_info pc_info1, cb_event_loop* cb_loop) {
   printf("\n====Got datachannel!=======%d\n", getpid());
   SetOnClosedCallback(pid, cb_loop, custom_close2);
-  closeDataChannel(socket);
+  closeDataChannel(pc_info1);
 }
 
 int main() {
@@ -70,24 +70,21 @@ int main() {
   pc_info pc_info_ret1;
   pc_info pc_info_ret2;
   pc_info_ret1.pid = pc_info_ret2.pid = 0;
-  pc_info_ret1.socket = pc_info_ret2.socket = NULL;
+  pc_info_ret1.context = pc_info_ret2.context = NULL;
   pc_info_ret1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback1, cb_loop);
   pc_info_ret2 = newPeerConnection(rtc_conf1, onIceCallback, onDCCallback, cb_loop);
 
-  sock1 = pc_info_ret1.socket;
-  sock2 = pc_info_ret2.socket;
+  ParseOffer(pc_info_ret1, ""); //trigger ICE
+  ParseOffer(pc_info_ret2, ""); // ""
 
-  ParseOffer(sock1, ""); //trigger ICE
-  ParseOffer(sock2, ""); // ""
-
-  CreateDataChannel(sock1, "testchannel", "", 0x00, 0);
+  CreateDataChannel(pc_info_ret1, "testchannel", "", 0x00, 0);
 
   printf("\n====================++++%d++\n", getpid());
-  char* offer = GenerateOffer(sock1);
-  ParseOffer(sock2, offer);
+  char* offer = GenerateOffer(pc_info_ret1);
+  ParseOffer(pc_info_ret2, offer);
   free(offer);
-  char* answer = GenerateAnswer(sock2);
-  ParseOffer(sock1, answer);
+  char* answer = GenerateAnswer(pc_info_ret2);
+  ParseOffer(pc_info_ret1, answer);
   free(answer);
   processWait(cb_loop);
   return 0;

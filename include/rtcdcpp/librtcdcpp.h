@@ -13,6 +13,10 @@ typedef struct rtcdcpp::DataChannel DataChannel;
 typedef struct PeerConnection PeerConnection;
 typedef struct DataChannel DataChannel;
 typedef struct cb_event_loop cb_event_loop;
+struct pc_info {
+  int pid;
+  void* context;
+};
 #endif
 #include <stdint.h>
 #include <stdbool.h>
@@ -43,29 +47,25 @@ struct IceCandidate_C {
 typedef struct IceCandidate_C IceCandidate_C;
 IceCandidate_C* newIceCandidate(const char* candidate, const char* sdpMid, int sdpMLineIndex);
 
+typedef struct pc_info pc_info;
+
 typedef void (*on_ice_cb)(IceCandidate_C ice_c);
 typedef void (*on_dc_cb)(DataChannel *dc, void* socket);
-typedef void (*dc_fn_ptr_pid)(int, void*, cb_event_loop*);
+typedef void (*dc_fn_ptr_pid)(int, pc_info, cb_event_loop*);
 
-struct pc_info {
-  int pid;
-  void* socket;
-};
-
-typedef struct pc_info pc_info;
 pc_info newPeerConnection(struct RTCConfiguration_C config, on_ice_cb ice_cb, dc_fn_ptr_pid dc_cb, cb_event_loop* cb_loop);
 
 void sendSignal(void* zmqsock);
 void signalSink(void* zmqsock);
 
 void destroyPeerConnection(void* socket);
-void ParseOffer(void* socket, const char* sdp);
-char* GenerateOffer(void* socket);
-char* GenerateAnswer(void* socket);
-bool SetRemoteIceCandidate(void* socket, const char* candidate_sdp); 
+void ParseOffer(pc_info pc_info, const char* sdp);
+char* GenerateOffer(pc_info pc_info);
+char* GenerateAnswer(pc_info pc_info);
+bool SetRemoteIceCandidate(pc_info pc_info, const char* candidate_sdp); 
 bool SetRemoteIceCandidates(void* socket, const GArray* candidate_sdps);
 
-int CreateDataChannel(void* socket, const char* label, const char* protocol, u_int8_t chan_type, u_int32_t reliability);
+int CreateDataChannel(pc_info pc_info, const char* label, const char* protocol, u_int8_t chan_type, u_int32_t reliability);
 // DataChannel member functions
 // TODO 
 u_int16_t getDataChannelStreamID(void* socket, DataChannel *dc);
@@ -74,7 +74,7 @@ const char* getDataChannelLabel(void* socket, DataChannel *dc);
 const char* getDataChannelProtocol(void* socket, DataChannel *dc);
 bool SendString(void* socket, const char* msg);
 bool SendBinary(void* socket, DataChannel *dc, const u_int8_t *msg, int len);
-void closeDataChannel(void* socket);
+void closeDataChannel(pc_info pc_info);
 
 
 void _destroyPeerConnection(PeerConnection* pc);
