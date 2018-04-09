@@ -2,6 +2,7 @@
 #include <map>
 #include <unordered_map>
 #include <thread>
+#include <mutex>
 typedef void (*open_cb)(void);
 typedef void (*on_string_msg)(int pid, const char* message);
 typedef void (*on_binary_msg)(void* message);
@@ -34,6 +35,7 @@ typedef void (*dc_fn_ptr_pid)(int, void*, cb_event_loop*);
     void addSocket(int pid, void* socket);
     void ctx_term();
   private:
+    std::mutex vec_lk;
     void* getContext(int pid);
     std::thread* cb_event_loop_thread;
     std::unordered_map<int, void*> pids_vs_sockets;
