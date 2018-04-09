@@ -51,14 +51,16 @@ extern "C" {
   }
 
   void sendSignal(void* zmqsock) {
-    if (zmq_send (zmqsock, "", 0, 0) != 0) {
-      perror("ZMQ Send Signal error:");
+    if (zmq_send (zmqsock, "", 0, 0) == -1) {
+      perror("ZMQ Send Signal error");
     }
   }
 
   void signalSink(void *zmqsock) {
     void* nothing;
-    zmq_recv (zmqsock, nothing, 0, 0);
+    if (zmq_recv (zmqsock, nothing, 0, 0) == -1) {
+      perror("ZMQ Signal Sink error");
+    }
   }
 
   std::list<int> process_status;
@@ -233,7 +235,9 @@ extern "C" {
       int command;
 
       while(alive) {
-        zmq_recv (responder, &command, sizeof(command), 0);
+        if (zmq_recv (responder, &command, sizeof(command), 0) == -1) {
+          perror("ZMQ_recv in cmd loop error");
+        }
         //printf("\nReceived command %d in process %d\n", command, getpid());
         switch(command) {
           case DESTROY_PC:
@@ -492,12 +496,18 @@ extern "C" {
 
   void ParseOffer(void *socket, const char *sdp) {
     int child_command = PARSE_SDP;
-    zmq_send (socket, &child_command, sizeof(child_command), 0); // Send command
+    if (zmq_send (socket, &child_command, sizeof(child_command), 0) == -1) {
+      perror("zmq_send in ParseOffer cmd error");
+    }
     size_t sdp_length = strlen(sdp);
     signalSink(socket);
-    zmq_send (socket, &sdp_length, sizeof(sdp_length), 0);
+    if (zmq_send (socket, &sdp_length, sizeof(sdp_length), 0) == -1) {
+      perror("zmq_send in ParseOffer:sdp_length error");
+    }
     signalSink(socket);
-    zmq_send (socket, sdp, sdp_length, 0);
+    if (zmq_send (socket, sdp, sdp_length, 0) == -1) {
+      perror("zmq_send in ParseOffer:sdp content error");
+    }
     signalSink(socket);
   }
 
@@ -561,7 +571,9 @@ extern "C" {
 
   int CreateDataChannel(void* socket, const char* label, const char* protocol, u_int8_t chan_type, u_int32_t reliability) {
     int command = CREATE_DC;
-    zmq_send (socket, &command, sizeof(command), 0);
+    if (zmq_send (socket, &command, sizeof(command), 0) == -1) {
+      perror("zmq_send in CreateDataChannel error");
+    }
     signalSink(socket);
     // send lengths
     size_t label_length = strlen(label);
