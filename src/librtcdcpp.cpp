@@ -503,7 +503,18 @@ extern "C" {
     signalSink(socket);
   }
 
-  void ParseOffer(void *socket, const char *sdp) {
+  void* make_req_socket(pc_info pc_info) {
+    void *requester = zmq_socket (pc_info.context, ZMQ_REQ);
+    char connect_path[35];
+    snprintf(connect_path, sizeof(connect_path), "ipc:///tmp/librtcdcpp%d-router", pc_info.pid);
+    int rc2 = zmq_connect(requester, connect_path);
+    assert (rc2 == 0);
+    return requester;
+  }
+
+  void ParseOffer(pc_info pc_info, const char *sdp) {
+    void *socket;
+    socket = make_req_socket(pc_info);
     int child_command = PARSE_SDP;
     if (zmq_send (socket, &child_command, sizeof(child_command), 0) == -1) {
       perror("zmq_send in ParseOffer cmd error");
@@ -520,7 +531,9 @@ extern "C" {
     signalSink(socket);
   }
 
-  char* GenerateOffer(void* socket) {
+  char* GenerateOffer(pc_info pc_info) {
+    void *socket;
+    socket = make_req_socket(pc_info);
     int child_command = GENERATE_OFFER;
     zmq_send (socket, &child_command, sizeof(child_command), 0); // Send command request
     // Response will contain length of generated offer
@@ -537,7 +550,9 @@ extern "C" {
     return recv_offer;
   }
 
-  char* GenerateAnswer(void *socket) {
+  char* GenerateAnswer(pc_info pc_info) {
+    void *socket;
+    socket = make_req_socket(pc_info);
     int command = GENERATE_ANSWER;
     zmq_send (socket, &command, sizeof(command), 0);
     size_t length;
@@ -552,7 +567,9 @@ extern "C" {
     return answer;
   }
 
-  bool SetRemoteIceCandidate(void *socket, const char* candidate_sdp) {
+  bool SetRemoteIceCandidate(pc_info pc_info, const char* candidate_sdp) {
+    void *socket;
+    socket = make_req_socket(pc_info);
     int command = SET_REMOTE_ICE_CAND;
     zmq_send (socket, &command, sizeof(command), 0);
     signalSink(socket);
@@ -578,7 +595,9 @@ extern "C" {
     return ret_val;
   }
 
-  int CreateDataChannel(void* socket, const char* label, const char* protocol, u_int8_t chan_type, u_int32_t reliability) {
+  int CreateDataChannel(pc_info pc_info, const char* label, const char* protocol, u_int8_t chan_type, u_int32_t reliability) {
+    void *socket;
+    socket = make_req_socket(pc_info);
     int command = CREATE_DC;
     if (zmq_send (socket, &command, sizeof(command), 0) == -1) {
       perror("zmq_send in CreateDataChannel error");
@@ -603,7 +622,9 @@ extern "C" {
     return pid;
   };
   
-  void closeDataChannel(void* socket) {
+  void closeDataChannel(pc_info pc_info) {
+    void *socket;
+    socket = make_req_socket(pc_info);
     printf("\nSent close\n");
     int command = CLOSE_DC;
     zmq_send (socket, &command, sizeof(command), 0);
