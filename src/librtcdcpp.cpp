@@ -247,6 +247,7 @@ extern "C" {
       assert (rc1 == 0);
 
       std::thread z_prox (zmq_proxy, router, dealer, nullptr);
+      pthread_t thread_handle = z_prox.native_handle();
       z_prox.detach();
 
       int command;
@@ -436,6 +437,11 @@ extern "C" {
       _destroyPeerConnection(child_pc);
       delete parent_event_loop;
       zmq_close(responder);
+      if (pthread_cancel(thread_handle) != 0) {
+        perror("pthread_cancel error");
+      }
+      zmq_close(router);
+      zmq_close(dealer);
       zmq_ctx_term(child_context);
 
       //zmq_close(requester);
