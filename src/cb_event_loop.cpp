@@ -131,11 +131,9 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
     // Iterate through the pull socket vector, pop them and connect as PULL socket and
     // add them to an internal map with pids as the key.
     // Iterate through these maps and perform socket functions.
-    //std::cout << "Size of vector: " << cb_evt_loop->pull_socket_pids.size() << "\n";
     std::unique_lock<std::mutex> lock1(cb_evt_loop->vec_lk);
     while (!cb_evt_loop->pull_socket_pids.empty()) {
       int pid = cb_evt_loop->pull_socket_pids.back();
-      //std::cout << "Added " << pid << "\n";
       void *cb_pull_socket = zmq_socket (cb_evt_loop->getContext(pid), ZMQ_PULL);
       if (cb_pull_socket == NULL) {
         perror("ZMQ_Socket for cb_pull_socket err: ");
@@ -154,7 +152,6 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
     }
     for (auto const pull_socket : cb_evt_loop->pull_sockets) {
       int pid = pull_socket.first; // auto pid?
-      //std::cout << "Checking messages for " << pid << "\n";
       while (cb_zmq_recv != -1) {
       	cb_zmq_recv = zmq_recvmsg (pull_socket.second, &cb_msg, ZMQ_DONTWAIT);
 			  std::string recv_string((const char *) zmq_msg_data(&cb_msg));
