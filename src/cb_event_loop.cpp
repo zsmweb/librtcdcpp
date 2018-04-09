@@ -30,7 +30,7 @@ pc_info cb_event_loop::make_pc_info(int pid) {
 
 void* cb_event_loop::getSocket(int pid) {
   void *requester = zmq_socket (this->getContext(pid), ZMQ_REQ);
-  char connect_path[30];
+  char connect_path[35];
   snprintf(connect_path, sizeof(connect_path), "ipc:///tmp/librtcdcpp%d-router", pid);
   int rc2 = zmq_connect(requester, connect_path);
   assert (rc2 == 0);
