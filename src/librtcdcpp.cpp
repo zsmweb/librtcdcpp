@@ -529,6 +529,7 @@ extern "C" {
       perror("zmq_send in ParseOffer:sdp content error");
     }
     signalSink(socket);
+    zmq_close(socket);
   }
 
   char* GenerateOffer(pc_info pc_info) {
