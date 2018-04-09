@@ -418,7 +418,7 @@ extern "C" {
             break;
           case 500:
             {
-            std::cerr << "Case of exit out of cmd loop hit";
+            //std::cerr << "\nCase of exit out of cmd loop hit\n";
             alive = false;
             break;
             }
@@ -443,9 +443,6 @@ extern "C" {
       zmq_close(router);
       zmq_close(dealer);
       zmq_ctx_term(child_context);
-
-      //zmq_close(requester);
-      //zmq_ctx_term(context);
       exit(0);
     } else {
       // Parent
@@ -490,7 +487,6 @@ extern "C" {
       _waitCallable(std::ref(i)); //!
     }
     cb_loop->ctx_term();
-    std::cout << "\nDELETE on cb_loop\n";
     delete cb_loop;
   }
 
