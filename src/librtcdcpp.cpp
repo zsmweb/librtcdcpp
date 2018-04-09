@@ -547,6 +547,7 @@ extern "C" {
     char* recv_offer = (char*) malloc(*length + 1);
     recv_offer[*length] = '\0';
     zmq_recv (socket, recv_offer, *length, 0);
+    zmq_close(socket);
     free(length);
     return recv_offer;
   }
@@ -565,6 +566,7 @@ extern "C" {
     char *answer = (char *) malloc(length + 1);
     zmq_recv (socket, answer, length, 0);
     answer[length] = '\0';
+    zmq_close(socket);
     return answer;
   }
 
@@ -582,6 +584,7 @@ extern "C" {
     // Get response that contains return boolean
     bool ret_val;
     zmq_recv (socket, &ret_val, sizeof(ret_val), 0);
+    zmq_close(socket);
     return ret_val;
   }
 
@@ -620,6 +623,7 @@ extern "C" {
     zmq_send (socket, &reliability, sizeof(reliability), 0);
     int pid;
     zmq_recv (socket, &pid, sizeof(pid), 0);
+    zmq_close (socket);
     return pid;
   };
   
@@ -630,6 +634,7 @@ extern "C" {
     int command = CLOSE_DC;
     zmq_send (socket, &command, sizeof(command), 0);
     signalSink(socket);
+    zmq_close (socket);
   }
 
   u_int16_t getDataChannelStreamID(void* socket, DataChannel* dc) {
