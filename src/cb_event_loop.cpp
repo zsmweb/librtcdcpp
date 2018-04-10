@@ -69,9 +69,12 @@ void cb_event_loop::addContext(int pid, void *context) {
 }
 
 void cb_event_loop::ctx_term() {
-  //if (zmq_ctx_term(this->cb_pull_context) != 0) {
-    //perror("cb_pull_socket ctx term error");
-  //}
+  for (auto context_map : this->cb_pull_contexts) {
+    if (zmq_ctx_term(context_map.second) == -1) {
+      perror("cb_pull_socket ctx term error");
+    }
+  }
+  this->cb_pull_contexts.clear();
 }
 
 void cb_event_loop::add_on_candidate(int pid, on_ice_cb fn_ptr) {
@@ -214,6 +217,7 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
                   }
 								}
 							}
+              cb_evt_loop->cb_pull_contexts.erase(pid);
 							cb_evt_loop->pull_sockets.erase(pid);
 							alive = false;
 							break;
