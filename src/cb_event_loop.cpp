@@ -198,7 +198,6 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
 							if (callback_fn) {
 								callback_fn(pid);
 							}
-              delete cb_obj;
               //signal the command loop on its child to exit out of it
               int signal_int = 500;
               if (zmq_send(cb_evt_loop->getSocket(pid), &signal_int, sizeof(signal_int), 0) == -1) {
