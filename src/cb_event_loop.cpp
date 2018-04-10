@@ -163,14 +163,14 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
           // std::this_thread::sleep_for(std::chrono::milliseconds(50));
           break;
         }
-				librtcdcpp::Callback cb_obj;
-				if (cb_obj.ParseFromString(recv_string) == false) {
+				librtcdcpp::Callback* cb_obj = new librtcdcpp::Callback;
+				if (cb_obj->ParseFromString(recv_string) == false) {
 					// printf("\nParseFromString returned false\n"); // not sure what that bool actually means. Wasn't able to find proper doc
 					// std::this_thread::sleep_for(std::chrono::milliseconds(100));
 					// continue;
 				}
-				if (cb_obj.has_on_cand()) {
-					const librtcdcpp::Callback::onCandidate& parsed_candidate = cb_obj.on_cand();
+				if (cb_obj->has_on_cand()) {
+					const librtcdcpp::Callback::onCandidate& parsed_candidate = cb_obj->on_cand();
 					// cb_obj
 					auto callback_fn = cb_evt_loop->on_candidate_cb[pid];
 					IceCandidate_C cand_arg;
@@ -181,21 +181,22 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
 					//printf("\n[C] candidate for pid %d is %s\n", pid, cand_arg.candidate);
 					callback_fn(cand_arg);
 				} else {
-					if (cb_obj.has_on_msg()) {
-						const librtcdcpp::Callback::onMessage& parsed_message = cb_obj.on_msg();
+					if (cb_obj->has_on_msg()) {
+						const librtcdcpp::Callback::onMessage& parsed_message = cb_obj->on_msg();
 						auto callback_fn = cb_evt_loop->on_stringmsg_cb[pid];
 						if (callback_fn != NULL) {
 							callback_fn(pid, parsed_message.message().c_str());
 						}
 					} else {
-						if (cb_obj.cbwo_args() == librtcdcpp::Callback::ON_CHANNEL) {
+						if (cb_obj->cbwo_args() == librtcdcpp::Callback::ON_CHANNEL) {
 							auto callback_fn = cb_evt_loop->on_datachannel_cb[pid];
 							callback_fn(pid, cb_evt_loop->make_pc_info(pid), cb_evt_loop);
-						} else if (cb_obj.cbwo_args() == librtcdcpp::Callback::ON_CLOSE) {
+						} else if (cb_obj->cbwo_args() == librtcdcpp::Callback::ON_CLOSE) {
 							auto callback_fn = cb_evt_loop->on_close_cb[pid];
 							if (callback_fn) {
 								callback_fn(pid);
 							}
+              delete cb_obj;
               //signal the command loop on its child to exit out of it
               int signal_int = 500;
               if (zmq_send(cb_evt_loop->getSocket(pid), &signal_int, sizeof(signal_int), 0) == -1) {
