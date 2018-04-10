@@ -41,6 +41,7 @@ typedef void (*dc_fn_ptr_pid)(int, pc_info, cb_event_loop*);
     pc_info make_pc_info(int pid);
   private:
     std::mutex vec_lk;
+    pthread_t parent_cb_loop_thread_handle;
     void* getContext(int pid);
     std::thread* cb_event_loop_thread;
     std::unordered_map<int, void*> pids_vs_sockets;

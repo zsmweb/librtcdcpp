@@ -13,12 +13,14 @@ struct IceCandidate_C {
 };
 cb_event_loop::cb_event_loop() {
   cb_event_loop_thread = new std::thread(cb_event_loop::parent_cb_loop, this);
+  this->parent_cb_loop_thread_handle = cb_event_loop_thread->native_handle();
   cb_event_loop_thread->detach();
 }
 
 cb_event_loop::~cb_event_loop() {
   cb_event_loop_thread->~thread();
   delete cb_event_loop_thread;
+  pthread_cancel(this->parent_cb_loop_thread_handle);
 }
 
 pc_info cb_event_loop::make_pc_info(int pid) {
