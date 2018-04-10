@@ -200,13 +200,14 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
 							}
               //signal the command loop on its child to exit out of it
               int signal_int = 500;
-              if (zmq_send(cb_evt_loop->getSocket(pid), &signal_int, sizeof(signal_int), 0) == -1) {
+              void* cmd_socket = cb_evt_loop->getSocket(pid);
+              if (zmq_send(cmd_socket, &signal_int, sizeof(signal_int), 0) == -1) {
                 perror("ZMQ Signal command loop error: ");
               }
 							if (zmq_close(cb_evt_loop->pull_sockets[pid]) != 0) {
 								perror("Close pull_socket error:");
 							} else {
-								if (zmq_close(cb_evt_loop->getSocket(pid)) != 0) {
+								if (zmq_close(cmd_socket) != 0) {
 									perror("Close requester socket error:");
                   if (zmq_ctx_term(cb_evt_loop->getContext(pid)) == -1) {
                     perror("Ctx close error");
