@@ -219,6 +219,7 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
 						//TODO: onError
 					}
 				}
+        delete cb_obj;
       }
     }
     if (cb_evt_loop->pull_sockets.empty() && alive == false) {
