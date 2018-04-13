@@ -152,8 +152,9 @@ void cb_event_loop::parent_cb_loop(cb_event_loop* cb_evt_loop) {
       if (zmq_bind (cb_pull_socket, cb_bind_path) == -1) {
         perror("ZMQ cb_pull_socket bind error: ");
       }
-      cb_evt_loop->pull_sockets.insert_or_assign(pid, std::move(cb_pull_socket));
+      cb_evt_loop->pull_sockets[pid] = std::move(cb_pull_socket);
       cb_evt_loop->pull_socket_pids.pop_back();
+      cb_pull_socket = NULL;
     }
     lock1.unlock();
     for (auto const pull_socket : cb_evt_loop->pull_sockets) {

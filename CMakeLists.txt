@@ -6,7 +6,7 @@ project(librtcdcpp
 
 option(DISABLE_SPDLOG "Disable Spdlog")
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_MACOSX_RPATH 1)
 
 SET(CMAKE_C_COMPILER /usr/bin/gcc)
