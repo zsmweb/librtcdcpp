@@ -39,13 +39,17 @@ int main() {
 	rtc_conf.ice_pwd = NULL;
 	rtc_conf.ice_servers = ice_servers;
 
+    cb_event_loop* cb_loop;
+    cb_loop = init_cb_event_loop();
+
 	void onIceCallback(struct IceCandidate_C ice_cand) {}
 	struct DataChannel* dc;
 	void onDCCallback(struct DataChannel* dc) {
 		printf("\n========Got datachannel!=========\n");
 	}
-	void *sock1;
-	sock1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback);
+	pc_info pc_info_ret1;
+	pc_info_ret1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback, cb_loop);
+	void* sock1 = pc_info_ret1.socket;
 	ParseOffer(sock1, ""); // Leads to ICE candidates being saved in next Generate SDP call
   char* answer = GenerateAnswer(sock1);
   gchar* answer_e = g_base64_encode(answer, strlen(answer));

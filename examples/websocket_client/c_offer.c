@@ -28,7 +28,8 @@ gchar* getlines() {
 /* end of custom multiline stdin scanning function */
 
 int main() {
-	
+	  cb_event_loop* cb_loop;
+  cb_loop = init_cb_event_loop();
   struct RTCIceServer_C rtc_ice;
 	rtc_ice.hostname = "stun3.l.google.com";
 	rtc_ice.port = 19302;
@@ -50,9 +51,11 @@ int main() {
 	}
 
 	void* sock1;
-	sock1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback);
+	pc_info pc_info_ret1;
+	pc_info_ret1 = newPeerConnection(rtc_conf, onIceCallback, onDCCallback, cb_loop);
+	sock1 = pc_info_ret1.socket;
 	ParseOffer(sock1, ""); // Leads to ICE candidates being saved in next Generate SDP call
-  CreateDataChannel(sock1, "testchannel", ""); // This is the offer client, so it should create a datachannel object
+  CreateDataChannel(sock1, "testchannel", "", 0x00, 0); // This is the offer client, so it should create a datachannel object
   char* offer = GenerateOffer(sock1);
   gchar* offer_e = g_base64_encode(offer, strlen(offer));
   printf("\nOffer:\n%s\n", offer_e);
